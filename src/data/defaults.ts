@@ -2,7 +2,7 @@
  * What a brand-new database starts with. Everything here can be edited later
  * from Teacher mode → Store & Earning / Settings.
  */
-import type { Settings, EarnRule, StoreItem, Goal } from '../lib/types'
+import type { Settings, EarnRule, StoreItem } from '../lib/types'
 
 export const DEFAULT_SETTINGS: Settings = {
   pin: '0000',
@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cheerBoard: true,
   cheerKiosk: true,
   storeOpen: true,
+  buyIns: true,
 }
 
 type NoId<T> = Omit<T, 'id'>
@@ -34,13 +35,11 @@ export const DEFAULT_ITEMS: Record<string, NoId<StoreItem>> = {
   i_music:  { label: 'Listen to music',      price: 8,  tier: 'everyday', icon: 'headphones', limitCount: 1, limitPeriod: 'day', active: true, order: 3 },
   i_deca:   { label: '10-min DECA store pass', price: 10, tier: 'everyday', icon: 'storefront', limitCount: 1, limitPeriod: 'day', hallMinutes: 10, active: true, order: 4 },
   i_halfhw: { label: 'Only half homework',   price: 20, tier: 'everyday', icon: 'scissors', limitCount: 1, limitPeriod: 'week', active: true, order: 5 },
-  i_gym:    { label: 'Gym access',           price: 80, tier: 'saver',    icon: 'basketball', active: true, order: 6 },
+  i_gym:    { label: 'Gym access',           price: 50, tier: 'saver',    icon: 'basketball', active: true, order: 6 },
+  i_movie:  { label: 'Movie day',            price: 30, tier: 'saver',    icon: 'popcorn', active: true, order: 7 },
+  i_wendys: { label: "Field trip to Wendy's", price: 40, tier: 'saver',   icon: 'hamburger', active: true, order: 8 },
 }
 
-export const DEFAULT_GOALS: Record<string, NoId<Goal>> = {
-  g_movie:   { label: 'Movie day',            target: 400, saved: 0, icon: 'popcorn', active: true, order: 1 },
-  g_wendys:  { label: "Field trip to Wendy's", target: 600, saved: 0, icon: 'hamburger', active: true, order: 2 },
-}
 
 /** Practice roster for demo mode only. */
 export const DEMO_NAMES = [

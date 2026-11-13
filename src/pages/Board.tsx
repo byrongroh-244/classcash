@@ -18,7 +18,8 @@ export default function Board({ onTeacher }: { onTeacher?: () => void } = {}) {
 
   const week = leaderboard(data, 'week').filter(r => r.score > 0).slice(0, 5)
   const all = leaderboard(data, 'all').filter(r => r.score > 0).slice(0, 5)
-  const goals = data.goals.filter(g => g.active)
+  const buyIns = data.items.filter(i => i.active && i.tier === 'saver')
+  const total = data.students.length || 1
 
   const Panel = ({ title, rows }: { title: string; rows: { id: string; name: string; score: number }[] }) => {
     const max = Math.max(1, ...rows.map(r => r.score))
@@ -52,18 +53,17 @@ export default function Board({ onTeacher }: { onTeacher?: () => void } = {}) {
         <Panel title="Top earners this week" rows={week} />
         <Panel title="All-time leaders" rows={all} />
       </div>
-      {goals.length > 0 && (
+      {buyIns.length > 0 && (
         <div className="board-goals">
-          {goals.map(g => {
-            const pct = Math.min(100, (g.saved / g.target) * 100)
+          {buyIns.map(i => {
+            const n = (data.lists[i.id] || []).length
             return (
-              <div key={g.id} className="board-panel" style={{ gap: '1.2vh' }}>
-                <div className="row" style={{ fontSize: '3.4vh', fontWeight: 600 }}>
-                  <Icon name={g.icon} size={36} light /><span className="grow">{g.label}</span>
-                  <span className="mono" style={{ color: '#94a3b8' }}>{g.saved} / {g.target}</span>
+              <div key={i.id} className="board-panel" style={{ gap: '1.2vh' }}>
+                <div className="row" style={{ fontSize: '3.2vh', fontWeight: 600 }}>
+                  <Icon name={i.icon} size={34} light /><span className="grow">{i.label}</span>
+                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>{n} of {data.students.length} in</span>
                 </div>
-                <div className="bar" style={{ height: '2.4vh', borderRadius: '1.2vh' }}><div style={{ width: `${pct}%` }} /></div>
-                {pct >= 100 && <div style={{ fontSize: '2.6vh', color: '#34d399' }}>Goal reached!</div>}
+                <div className="bar" style={{ height: '2.2vh', borderRadius: '1.1vh' }}><div style={{ width: `${Math.min(100, (n / total) * 100)}%` }} /></div>
               </div>
             )
           })}

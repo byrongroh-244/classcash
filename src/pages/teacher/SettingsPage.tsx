@@ -44,7 +44,7 @@ export default function SettingsPage() {
         <h2>Front-of-room board</h2>
         <div className="card" style={{ padding: 18, marginBottom: 24 }}>
           <p className="slate" style={{ fontSize: 14, marginBottom: 10 }}>
-            Open this link on the projector computer or a TV for a full-screen leaderboard and class goals. It updates live and has no buttons.
+            Open this link on the projector computer or a TV for a full-screen leaderboard, shout-outs and buy-in counts. It updates live and has no buttons.
           </p>
           <div className="row">
             <code className="input mono grow" style={{ fontSize: 13 }}>{boardUrl}</code>
@@ -66,10 +66,10 @@ export default function SettingsPage() {
           if (c !== newPin) return false
           await saveSettings({ pin: c }); setChangingPin(null); setMsg('PIN changed'); return true
         }} />}
-      {resetting && <PinPad title="Enter PIN to reset" subtitle="This zeroes all balances and empties the goal jars." onCancel={() => setResetting(false)}
+      {resetting && <PinPad title="Enter PIN to reset" subtitle="This zeroes all balances and banked credits. Buy-in lists are kept." onCancel={() => setResetting(false)}
         onComplete={async c => {
           if (c !== s.pin) return false
-          await resetSemester(data, true); setResetting(false); setMsg('All balances reset to 0'); return true
+          await resetSemester(data); setResetting(false); setMsg('All balances reset to 0'); return true
         }} />}
       {msg && <Toast key={msg} onDone={() => setMsg('')}><span className="row"><Icon name="check" size={16} light />{msg}</span></Toast>}
     </div>

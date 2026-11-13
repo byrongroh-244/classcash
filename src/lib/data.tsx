@@ -5,8 +5,8 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { db } from './db'
 import { dateStr, weekStartStr } from './dates'
-import { DEFAULT_SETTINGS, DEFAULT_RULES, DEFAULT_ITEMS, DEFAULT_GOALS, DEMO_NAMES } from '../data/defaults'
-import type { Settings, Student, EarnRule, StoreItem, Goal, Tx, HallPass } from './types'
+import { DEFAULT_SETTINGS, DEFAULT_RULES, DEFAULT_ITEMS, DEMO_NAMES } from '../data/defaults'
+import type { Settings, Student, EarnRule, StoreItem, Tx, HallPass, ListEntry } from './types'
 
 export interface Data {
   ready: boolean
@@ -15,7 +15,10 @@ export interface Data {
   allStudents: Student[]       // including removed
   rules: EarnRule[]
   items: StoreItem[]
-  goals: Goal[]
+  /** banks[studentId][itemId] = credits locked toward that buy-in item */
+  banks: Record<string, Record<string, number>>
+  /** lists[itemId] = students who bought it and are on its list */
+  lists: Record<string, ListEntry[]>
   hall: HallPass[]             // passes still running
   weekTx: Tx[]                 // since Monday, newest first
   todayTx: Tx[]                // newest first
@@ -49,7 +52,6 @@ async function seedIfEmpty() {
     settings: DEFAULT_SETTINGS,
     rules: DEFAULT_RULES,
     items: DEFAULT_ITEMS,
-    goals: DEFAULT_GOALS,
   }
   if (db.demo) {
     const now = Date.now()
@@ -60,13 +62,32 @@ async function seedIfEmpty() {
   await db.update(updates)
 }
 
+/**
+ * One-time switch for databases made before buy-ins existed: turn off the old
+ * shared class jars, add Movie day / Wendy's as individual buy-ins, and set
+ * gym access to 50. Every price can be changed in Store & earning.
+ */
+async function migrateBuyIns() {
+  const s = await db.get('settings')
+  if (!s || s.buyIns) return
+  const items = (await db.get('items')) || {}
+  const goals = (await db.get('goals')) || {}
+  const u: Record<string, unknown> = { 'settings/buyIns': true }
+  for (const id of Object.keys(goals)) u[`goals/${id}/active`] = false
+  const has = (label: string) => Object.values(items).some((i: any) => (i.label || '').toLowerCase().includes(label)) // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (!has('movie')) u['items/i_movie'] = DEFAULT_ITEMS.i_movie
+  if (!has('wendy')) u['items/i_wendys'] = DEFAULT_ITEMS.i_wendys
+  if (items.i_gym && items.i_gym.price === 80) u['items/i_gym/price'] = 50
+  await db.update(u)
+}
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
-  useEffect(() => { seedIfEmpty() }, [])
+  useEffect(() => { seedIfEmpty().then(migrateBuyIns) }, [])
 
   const today = dateStr(new Date(now))
   const weekStart = weekStartStr(new Date(now))
@@ -75,7 +96,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const studentsRaw = useLive('students')
   const rulesRaw = useLive('rules')
   const itemsRaw = useLive('items')
-  const goalsRaw = useLive('goals')
+  const banksRaw = useLive<Record<string, Record<string, number>>>('banks')
+  const listsRaw = useLive<Record<string, Record<string, Omit<ListEntry, 'studentId'>>>>('lists')
   const hallRaw = useLive('hall')
   const weekRaw = useLive('tx', [weekStart], { child: 'date', startAt: weekStart })
   const dailyRaw = useLive<Record<string, Record<string, string>> & { _saved?: number }>(`daily/${today}`, [today])
@@ -93,7 +115,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       allStudents,
       rules: toList<EarnRule>(rulesRaw).sort((a, b) => a.order - b.order),
       items: toList<StoreItem>(itemsRaw).sort((a, b) => a.order - b.order),
-      goals: toList<Goal>(goalsRaw).map(g => ({ ...g, saved: g.saved || 0 })).sort((a, b) => a.order - b.order),
+      banks: banksRaw || {},
+      lists: Object.fromEntries(Object.entries(listsRaw || {}).map(([itemId, m]) => [
+        itemId, Object.entries(m || {}).map(([studentId, e]) => ({ ...e, studentId })).sort((a, b) => a.ts - b.ts),
+      ])),
       allHall: toList<HallPass & { id: string }>(hallRaw),
       weekTx,
       todayTx: weekTx.filter(t => t.date === today),
@@ -101,7 +126,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       dailySaved: !!_saved,
       today, weekStart,
     }
-  }, [settingsRaw, studentsRaw, rulesRaw, itemsRaw, goalsRaw, hallRaw, weekRaw, dailyRaw, today, weekStart])
+  }, [settingsRaw, studentsRaw, rulesRaw, itemsRaw, banksRaw, listsRaw, hallRaw, weekRaw, dailyRaw, today, weekStart])
 
   // Only the hall list and clock change every second; everything else keeps
   // the same object identity until the database actually changes.
@@ -136,3 +161,9 @@ export function usedCount(data: Data, studentId: string, item: StoreItem): numbe
   const pool = item.limitPeriod === 'week' ? data.weekTx : data.todayTx
   return pool.filter(t => t.studentId === studentId && t.kind === 'spend' && t.refId === item.id && !t.undone).length
 }
+
+export const banked = (data: Data, studentId: string, itemId: string) => data.banks[studentId]?.[itemId] || 0
+export const bankedTotal = (data: Data, studentId: string) =>
+  Object.values(data.banks[studentId] || {}).reduce((n, v) => n + (v || 0), 0)
+export const onList = (data: Data, studentId: string, itemId: string) =>
+  (data.lists[itemId] || []).some(e => e.studentId === studentId)

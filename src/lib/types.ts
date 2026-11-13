@@ -15,6 +15,16 @@ export interface Settings {
   cheerKiosk: boolean
   /** Closed = the front iPad shows the leaderboard and nothing can be bought. */
   storeOpen: boolean
+  /** Set once the old shared class jars have been switched to individual buy-ins. */
+  buyIns?: boolean
+}
+
+/** A student on a buy-in item's list (paid, waiting for the event / to use it). */
+export interface ListEntry {
+  studentId: string
+  name: string
+  ts: number
+  txId: string
 }
 
 export interface Student {
@@ -45,6 +55,7 @@ export interface StoreItem {
   id: string
   label: string
   price: number
+  /** saver = buy-in: students bank credits toward it, then go on its list. */
   tier: 'everyday' | 'saver'
   icon: string
   /** e.g. 2 per day; 0/undefined = unlimited. */
@@ -68,7 +79,7 @@ export interface Goal {
 
 export type TxKind =
   | 'daily' | 'earn' | 'bonus' | 'fine'   // teacher gives / takes
-  | 'spend' | 'donate'                    // student
+  | 'spend' | 'donate' | 'bank'           // student
   | 'free'                                // free hall pass (0 credits)
   | 'reverse' | 'reset'
 
@@ -92,6 +103,8 @@ export interface Tx {
   undone?: boolean
   /** Show a confetti shout-out for this (Dashboard bonuses — not daily, fines or corrections). */
   cheer?: boolean
+  /** Buy-in purchase: how much of the price came out of the student's locked bank. */
+  bankUsed?: number
   /** This purchase started a hall pass (undoing it ends the pass). */
   hall?: boolean
   /** On a 'reverse' tx: the id of the tx it reverses. */

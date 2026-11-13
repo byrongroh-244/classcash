@@ -128,11 +128,12 @@ export default function Kiosk() {
   )
 }
 
-/** Dark right-hand panel: who's in the hall, this week's top 5, class goals. */
+/** Dark right-hand panel: who's in the hall, this week's top 5, buy-in counts. */
 export function SidePanel() {
   const data = useData()
   const top = leaderboard(data, 'week').filter(r => r.score > 0).slice(0, 5)
-  const goals = data.goals.filter(g => g.active)
+  const buyIns = data.items.filter(i => i.active && i.tier === 'saver')
+  const total = data.students.length || 1
   return (
     <aside className="side">
       {data.hall.length > 0 && (
@@ -157,19 +158,22 @@ export function SidePanel() {
           </div>
         ))}
       </div>
-      {goals.length > 0 && (
+      {buyIns.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div className="label">Class goals</div>
-          {goals.map(g => (
-            <div key={g.id} className="jar">
-              <div className="row" style={{ marginBottom: 8, fontSize: 15 }}>
-                <Icon name={g.icon} size={20} light /><span className="grow" style={{ fontWeight: 600 }}>{g.label}</span>
-                {g.saved >= g.target && <Icon name="confetti" size={18} light />}
+          <div className="label">Buy-ins</div>
+          {buyIns.map(i => {
+            const n = (data.lists[i.id] || []).length
+            return (
+              <div key={i.id} className="jar">
+                <div className="row" style={{ marginBottom: 8, fontSize: 15 }}>
+                  <Icon name={i.icon} size={20} light /><span className="grow" style={{ fontWeight: 600 }}>{i.label}</span>
+                  <span className="mono" style={{ fontSize: 13, color: '#fde68a' }}>{i.price}</span>
+                </div>
+                <div className="bar"><div style={{ width: `${Math.min(100, (n / total) * 100)}%` }} /></div>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>{n} of {data.students.length} in</div>
               </div>
-              <div className="bar"><div style={{ width: `${Math.min(100, (g.saved / g.target) * 100)}%` }} /></div>
-              <div className="mono" style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>{g.saved} / {g.target}</div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </aside>

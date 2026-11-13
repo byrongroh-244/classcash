@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { useData, usedCount } from '../lib/data'
+import { useData, usedCount, banked, bankedTotal, onList } from '../lib/data'
 import { db } from '../lib/db'
-import { buy, canBuy, donate } from '../lib/actions'
+import { buy, canBuy, bankToward, bankRoom } from '../lib/actions'
 import { timeStr, shortDate, mmss } from '../lib/dates'
 import { Amt, Overlay, useIdle, Icon } from '../components/ui'
-import type { Student, StoreItem, Goal, Tx } from '../lib/types'
+import type { Student, StoreItem, Tx } from '../lib/types'
 
 export default function StudentAccount({ student: s, onDone }: { student: Student; onDone: () => void }) {
   const data = useData()
   const [confirm, setConfirm] = useState<StoreItem | null>(null)
-  const [give, setGive] = useState<Goal | null>(null)
+  const [saving, setSaving] = useState<StoreItem | null>(null)
   const [success, setSuccess] = useState<{ item: StoreItem; at: number } | null>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
@@ -18,13 +18,13 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
 
   const everyday = data.items.filter(i => i.active && i.tier === 'everyday')
   const saver = data.items.filter(i => i.active && i.tier === 'saver')
-  const goals = data.goals.filter(g => g.active)
+  const myBanked = bankedTotal(data, s.id)
   const myPass = data.hall.find(h => h.studentId === s.id)
 
   const doBuy = async (item: StoreItem) => {
     setBusy(true)
     const ok = await buy(data, s, item)
-    setBusy(false); setConfirm(null)
+    setBusy(false); setConfirm(null); setSaving(null)
     if (ok) setSuccess({ item, at: Date.now() })
     else setMsg("That didn't go through — check your balance and try again.")
   }
@@ -54,6 +54,12 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
           <div className="label">Balance</div>
           <Amt n={s.balance} className={`acct-balance ${s.balance < 0 ? 'neg' : ''}`} />
         </div>
+        {myBanked > 0 && (
+          <div style={{ textAlign: 'right', marginLeft: 18 }}>
+            <div className="label">Banked</div>
+            <Amt n={myBanked} className="acct-banked" />
+          </div>
+        )}
         <button className="btn dark lg" style={{ marginLeft: 12 }} onClick={onDone}>Done</button>
       </div>
       <div className="timeout-bar"><div style={{ width: `${(left / data.settings.logoutSeconds) * 100}%` }} /></div>
@@ -87,39 +93,27 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
 
         {saver.length > 0 && (
           <div className="section">
-            <h2>Save up for</h2>
+            <h2>Buy-ins</h2>
+            <p className="slate" style={{ fontSize: 14, marginBottom: 10 }}>
+              Bank {data.settings.currency} toward a big item a little at a time. Banked {data.settings.currency} are locked for that item.
+              When you have enough, buy it and you're on the list.
+            </p>
             <div className="shop-grid">
               {saver.map(item => {
-                const ok = canBuy(data, s, item).ok
-                const pct = Math.max(0, Math.min(100, (s.balance / item.price) * 100))
+                const mine = banked(data, s.id, item.id)
+                const listed = onList(data, s.id, item.id)
+                const ready = canBuy(data, s, item).ok
                 return (
-                  <button key={item.id} className={`shop-item ${ok ? 'can' : ''}`} disabled={!ok} onClick={() => setConfirm(item)}>
+                  <button key={item.id} className={`shop-item ${listed ? 'listed' : ready ? 'can' : ''}`} onClick={() => setSaving(item)}>
                     <Icon name={item.icon} size={36} />
                     <span className="name">{item.label}</span>
                     <Amt n={item.price} />
-                    <div className="save-bar"><div style={{ width: `${pct}%` }} /></div>
-                    <span className="status">{statusFor(item)}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {goals.length > 0 && (
-          <div className="section">
-            <h2>Class goals</h2>
-            <p className="slate" style={{ fontSize: 14, marginBottom: 10 }}>Chip in with your classmates. When the jar is full, the whole class gets it.</p>
-            <div className="shop-grid light">
-              {goals.map(g => {
-                const done = g.saved >= g.target
-                return (
-                  <button key={g.id} className="shop-item" disabled={done || s.balance <= 0} onClick={() => setGive(g)}>
-                    <Icon name={g.icon} size={36} />
-                    <span className="name">{g.label}</span>
-                    <div className="bar"><div style={{ width: `${Math.min(100, (g.saved / g.target) * 100)}%` }} /></div>
-                    <span className="mono slate" style={{ fontSize: 13 }}>{g.saved} / {g.target}</span>
-                    <span className="status">{done ? <span className="pos">Goal reached!</span> : <span style={{ color: 'var(--primary)' }}>Tap to chip in</span>}</span>
+                    <div className="save-bar"><div style={{ width: `${listed ? 100 : Math.min(100, (mine / item.price) * 100)}%` }} /></div>
+                    <span className="status">
+                      {listed ? <span className="pos">You're on the list</span>
+                        : ready ? <span className="pos">Ready to buy</span>
+                        : <span className="slate">{mine} / {item.price} banked</span>}
+                    </span>
                   </button>
                 )
               })}
@@ -151,10 +145,15 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
         </Overlay>
       )}
 
-      {give && <GiveModal goal={give} balance={s.balance} currency={data.settings.currency} onClose={() => setGive(null)} onGive={async n => {
-        setBusy(true); const ok = await donate(s, give, n); setBusy(false); setGive(null)
-        if (!ok) setMsg("That didn't go through — check your balance.")
-      }} busy={busy} />}
+
+      {saving && (
+        <SaverModal item={saving} s={s} busy={busy} onClose={() => setSaving(null)}
+          onBank={async n => {
+            setBusy(true); const ok = await bankToward(data, s, saving, n); setBusy(false)
+            if (!ok) setMsg("That didn't go through — check your balance.")
+          }}
+          onBuy={() => doBuy(saving)} />
+      )}
 
       {msg && (
         <Overlay onClose={() => setMsg('')}>
@@ -165,24 +164,6 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
   )
 }
 
-function GiveModal({ goal, balance, currency, onClose, onGive, busy }: { goal: Goal; balance: number; currency: string; onClose: () => void; onGive: (n: number) => void; busy: boolean }) {
-  const remaining = goal.target - goal.saved
-  const options = [1, 5, 10, 25].filter(n => n <= balance && n <= Math.max(remaining, 1))
-  return (
-    <Overlay onClose={onClose}>
-      <div className="modal">
-        <Icon name={goal.icon} size={64} />
-        <h2>Chip in to {goal.label}</h2>
-        <p className="slate" style={{ margin: '6px 0 20px' }}>{remaining} more needed. How many {currency} do you want to give?</p>
-        <div className="row" style={{ justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
-          {options.map(n => <button key={n} className="btn lg" disabled={busy} onClick={() => onGive(n)}><Amt n={n} /></button>)}
-          {options.length === 0 && <p className="muted">You don't have enough yet.</p>}
-        </div>
-        <button className="btn block" onClick={onClose}>Cancel</button>
-      </div>
-    </Overlay>
-  )
-}
 
 /** Big "show your teacher" screen after a purchase. */
 function PurchaseDone({ item, at, name, onClose }: { item: StoreItem; at: number; name: string; onClose: () => void }) {
@@ -197,6 +178,7 @@ function PurchaseDone({ item, at, name, onClose }: { item: StoreItem; at: number
       <div className="serif" style={{ fontSize: 44, fontWeight: 700 }}>{name}</div>
       <div style={{ fontSize: 28, fontWeight: 600 }}>{item.label}</div>
       {pass && <div className="mono" style={{ fontSize: 22, opacity: .9 }}>Back by {timeStr(pass.start + pass.minutes * 60000)}</div>}
+      {item.tier === 'saver' && <div style={{ fontSize: 22, opacity: .95 }}>You're on the list!</div>}
       <div style={{ fontSize: 16, opacity: .85, marginTop: 20 }}>Purchased at {timeStr(at)} · tap to close</div>
     </div>
   )
@@ -234,5 +216,60 @@ export function HistoryList({ txs, empty, onUndo }: { txs: Tx[]; empty?: string;
         )
       })}
     </div>
+  )
+}
+
+/** Bank toward a buy-in item, or buy it once there's enough. */
+function SaverModal({ item, s, busy, onClose, onBank, onBuy }: {
+  item: StoreItem; s: Student; busy: boolean; onClose: () => void; onBank: (n: number) => void; onBuy: () => void
+}) {
+  const data = useData()
+  const mine = banked(data, s.id, item.id)
+  const listed = onList(data, s.id, item.id)
+  const room = bankRoom(data, s, item)
+  const check = canBuy(data, s, item)
+  const fromBalance = Math.max(0, item.price - mine)
+  const amounts = [...new Set([1, 5, 10, room].filter(n => n > 0 && n <= room))].sort((a, b) => a - b)
+  const cur = data.settings.currency
+  return (
+    <Overlay onClose={onClose}>
+      <div className="modal">
+        <Icon name={item.icon} size={64} />
+        <h2>{item.label}</h2>
+        <p className="slate" style={{ marginBottom: 14 }}>Costs <Amt n={item.price} /> {cur}</p>
+
+        {listed ? (
+          <p className="pos" style={{ fontSize: 18, fontWeight: 600, margin: '10px 0 20px' }}>You're on the list for this!</p>
+        ) : (
+          <>
+            <div className="save-bar" style={{ height: 14, borderRadius: 8 }}><div style={{ width: `${Math.min(100, (mine / item.price) * 100)}%` }} /></div>
+            <p className="mono" style={{ fontSize: 15, margin: '8px 0 18px' }}><b>{mine}</b> / {item.price} banked</p>
+
+            {check.ok ? (
+              <button className="btn lg green block" disabled={busy} onClick={onBuy} style={{ marginBottom: 12 }}>
+                Buy it{mine > 0 ? ` (${Math.min(mine, item.price)} banked${fromBalance ? ` + ${fromBalance} from balance` : ''})` : ''}
+              </button>
+            ) : null}
+
+            {mine < item.price && (
+              <>
+                <div className="label" style={{ marginBottom: 8 }}>Bank toward it</div>
+                {amounts.length ? (
+                  <div className="row" style={{ justifyContent: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
+                    {amounts.map(n => (
+                      <button key={n} className="btn lg" disabled={busy} onClick={() => onBank(n)}>
+                        {n === room && n > 10 ? 'All ' : '+'}{n}<span className="coin" />
+                      </button>
+                    ))}
+                  </div>
+                ) : <p className="muted" style={{ marginBottom: 6 }}>You don't have any {cur} to bank right now.</p>}
+                <p className="muted" style={{ fontSize: 12, margin: '8px 0 14px' }}>Banked {cur} are locked for {item.label}. Only your teacher can move them back.</p>
+              </>
+            )}
+          </>
+        )}
+        <button className="btn block" onClick={onClose}>Done</button>
+      </div>
+    </Overlay>
   )
 }

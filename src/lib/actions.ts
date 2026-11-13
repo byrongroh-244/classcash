@@ -5,9 +5,9 @@
  */
 import { db, INC } from './db'
 import { dateStr } from './dates'
-import type { Student, EarnRule, StoreItem, Goal, Tx, TxKind, Settings } from './types'
+import type { Student, EarnRule, StoreItem, Tx, TxKind, Settings } from './types'
 import type { Data } from './data'
-import { usedCount } from './data'
+import { usedCount, banked, onList } from './data'
 
 type NewTx = Omit<Tx, 'id' | 'date' | 'ts'>
 
@@ -86,6 +86,11 @@ function reverseInto(u: Record<string, unknown>, t: Tx, batch?: string) {
   if (t.kind === 'donate' && t.refId) addInc(u, `goals/${t.refId}/saved`, t.amount) // amount is negative
   if (t.kind === 'daily' && t.refId) u[`daily/${t.date}/${t.studentId}/${t.refId}`] = null
   if (t.hall) u[`hall/${t.studentId}`] = null
+  // Undo a bank deposit: credits come out of the locked bank, back to the balance.
+  if (t.kind === 'bank' && t.refId) addInc(u, `banks/${t.studentId}/${t.refId}`, t.amount) // amount is negative
+  // Undo a buy-in purchase: banked part goes back in the bank, student comes off the list.
+  if (t.kind === 'spend' && t.bankUsed && t.refId) addInc(u, `banks/${t.studentId}/${t.refId}`, t.bankUsed)
+  if (t.kind === 'spend' && t.refId && t.bankUsed !== undefined) u[`lists/${t.refId}/${t.studentId}`] = null
 }
 
 export async function undoTx(txs: Tx[]) {
@@ -124,6 +129,15 @@ export function canBuy(data: Data, s: Student, item: StoreItem): BuyCheck {
     if (data.hall.some(h => h.studentId === s.id)) return { ok: false, reason: "You're already on a hall pass.", short: 'On a pass' }
     if (data.hall.length >= data.settings.maxInHall) return { ok: false, reason: 'Someone is already in the hall. Try again when they are back.', short: 'Hall is full' }
   }
+  if (item.tier === 'saver') {
+    if (onList(data, s.id, item.id)) return { ok: false, reason: "You're already on the list for this.", short: 'On the list' }
+    const have = banked(data, s.id, item.id) + Math.max(0, s.balance)
+    if (have < item.price) {
+      const need = item.price - have
+      return { ok: false, reason: `You need ${need} more.`, short: `Need ${need} more` }
+    }
+    return { ok: true }
+  }
   if (s.balance < item.price) {
     const need = item.price - s.balance
     return { ok: false, reason: `You need ${need} more.`, short: `Need ${need} more` }
@@ -131,10 +145,72 @@ export function canBuy(data: Data, s: Student, item: StoreItem): BuyCheck {
   return { ok: true }
 }
 
+/** Most a student can still bank toward an item (can't bank past the price). */
+export function bankRoom(data: Data, s: Student, item: StoreItem) {
+  return Math.max(0, Math.min(s.balance, item.price - banked(data, s.id, item.id)))
+}
+
+/** Lock credits toward a buy-in item. Only an undo (teacher) can take them back out. */
+export async function bankToward(data: Data, s: Student, item: StoreItem, amount: number): Promise<boolean> {
+  const n = Math.min(amount, item.price - banked(data, s.id, item.id))
+  if (n <= 0 || !data.settings.storeOpen) return false
+  const res = await db.transaction(`students/${s.id}/balance`, (cur: number | null) => {
+    if (cur === null) return cur
+    if (cur < n) return undefined
+    return cur - n
+  })
+  if (!res.committed) return false
+  const id = db.newKey()
+  await db.update({
+    [`tx/${id}`]: {
+      studentId: s.id, studentName: s.name, amount: -n, earnDelta: 0,
+      kind: 'bank', label: `Banked toward ${item.label}`, refId: item.id, by: 'student', date: dateStr(), ts: Date.now(),
+    },
+    [`banks/${s.id}/${item.id}`]: INC(n),
+  })
+  return true
+}
+
+/** Buy a buy-in item: banked credits first, the rest from balance; student goes on the list. */
+async function buyIn(data: Data, s: Student, item: StoreItem): Promise<boolean> {
+  const bankUsed = Math.min(banked(data, s.id, item.id), item.price)
+  const fromBalance = item.price - bankUsed
+  if (fromBalance > 0) {
+    const res = await db.transaction(`students/${s.id}/balance`, (cur: number | null) => {
+      if (cur === null) return cur
+      if (cur < fromBalance) return undefined
+      return cur - fromBalance
+    })
+    if (!res.committed) return false
+  }
+  const id = db.newKey()
+  const ts = Date.now()
+  await db.update({
+    [`tx/${id}`]: {
+      studentId: s.id, studentName: s.name, amount: -fromBalance, earnDelta: 0, bankUsed,
+      kind: 'spend', label: bankUsed ? `${item.label} (${bankUsed} banked${fromBalance ? ` + ${fromBalance}` : ''})` : item.label,
+      refId: item.id, by: 'student', date: dateStr(new Date(ts)), ts,
+    },
+    [`banks/${s.id}/${item.id}`]: bankUsed ? INC(-bankUsed) : null,
+    [`lists/${item.id}/${s.id}`]: { name: s.name, ts, txId: id },
+  })
+  return true
+}
+
+/** Teacher: take one student off an item's list (they've used it). No refund. */
+export async function removeFromList(itemId: string, studentId: string) {
+  await db.update({ [`lists/${itemId}/${studentId}`]: null })
+}
+/** Teacher: the event happened — clear everyone off the list. No refunds. */
+export async function clearList(itemId: string) {
+  await db.update({ [`lists/${itemId}`]: null })
+}
+
 /** Charge the student; returns false if they couldn't afford it by the time it ran. */
 export async function buy(data: Data, s: Student, item: StoreItem): Promise<boolean> {
   const check = canBuy(data, s, item)
   if (!check.ok) return false
+  if (item.tier === 'saver') return buyIn(data, s, item)
   // Take the money with a transaction so a double tap can't charge twice or go negative.
   const res = await db.transaction(`students/${s.id}/balance`, (cur: number | null) => {
     if (cur === null) return cur
@@ -154,24 +230,6 @@ export async function buy(data: Data, s: Student, item: StoreItem): Promise<bool
   return true
 }
 
-export async function donate(s: Student, goal: Goal, amount: number): Promise<boolean> {
-  if (amount <= 0) return false
-  const res = await db.transaction(`students/${s.id}/balance`, (cur: number | null) => {
-    if (cur === null) return cur
-    if (cur < amount) return undefined
-    return cur - amount
-  })
-  if (!res.committed) return false
-  const id = db.newKey()
-  await db.update({
-    [`tx/${id}`]: {
-      studentId: s.id, studentName: s.name, amount: -amount, earnDelta: 0,
-      kind: 'donate', label: `Gave to ${goal.label}`, refId: goal.id, by: 'student', date: dateStr(), ts: Date.now(),
-    },
-    [`goals/${goal.id}/saved`]: INC(amount),
-  })
-  return true
-}
 
 // ─── Hall ────────────────────────────────────────────────────────────────────
 
@@ -205,7 +263,7 @@ export async function updateStudent(id: string, fields: Partial<Pick<Student, 'n
 }
 
 /** Zero every balance and leaderboard total. History is kept. */
-export async function resetSemester(data: Data, alsoGoals: boolean) {
+export async function resetSemester(data: Data) {
   const u: Record<string, unknown> = {}
   for (const s of data.allStudents) {
     if (s.balance || s.earned) {
@@ -218,7 +276,8 @@ export async function resetSemester(data: Data, alsoGoals: boolean) {
     u[`students/${s.id}/balance`] = 0
     u[`students/${s.id}/earned`] = 0
   }
-  if (alsoGoals) for (const g of data.goals) u[`goals/${g.id}/saved`] = 0
+  // Locked bank credits are cleared too (buy-in lists are kept — those students paid).
+  u['banks'] = null
   await db.update(u)
 }
 
@@ -230,7 +289,7 @@ export async function saveSettings(fields: Partial<Settings>) {
   await db.update(u)
 }
 
-type Coll = 'rules' | 'items' | 'goals'
+type Coll = 'rules' | 'items'
 export async function saveRow(coll: Coll, id: string | null, fields: Record<string, unknown>) {
   const key = id || db.newKey()
   const u: Record<string, unknown> = {}

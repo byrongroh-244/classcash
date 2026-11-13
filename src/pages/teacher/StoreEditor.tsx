@@ -1,11 +1,11 @@
 /**
- * Edit earning amounts, store items and class goals. Changes save as soon as
+ * Edit earning amounts and store items (everyday and buy-in). Changes save as soon as
  * you leave a field.
  */
 import { useState } from 'react'
 import { useData } from '../../lib/data'
 import { saveRow, deleteRow } from '../../lib/actions'
-import type { EarnRule, StoreItem, Goal } from '../../lib/types'
+import type { EarnRule, StoreItem } from '../../lib/types'
 import { Icon, Overlay, PICKABLE_ICONS } from '../../components/ui'
 
 /** Tap the icon to choose a different one from the library. */
@@ -49,7 +49,7 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
   )
 }
 
-const del = (coll: 'rules' | 'items' | 'goals', id: string, label: string) => {
+const del = (coll: 'rules' | 'items', id: string, label: string) => {
   if (confirm(`Delete "${label}"? Past history keeps its record.`)) deleteRow(coll, id)
 }
 const nextOrder = (list: { order: number }[]) => Math.max(0, ...list.map(x => x.order || 0)) + 1
@@ -94,7 +94,7 @@ export default function StoreEditor() {
                   <td style={{ paddingLeft: 14 }}><IconPick value={i.icon} onPick={v => saveRow('items', i.id, { icon: v })} /></td>
                   <td><Text value={i.label} w={190} onSave={v => saveRow('items', i.id, { label: v })} /></td>
                   <td><Text value={i.price} w={60} num onSave={v => saveRow('items', i.id, { price: Number(v) || 0 })} /></td>
-                  <td><Seg value={i.tier} options={[['everyday', 'Everyday'], ['saver', 'Save up']]} onChange={v => saveRow('items', i.id, { tier: v })} /></td>
+                  <td><Seg value={i.tier} options={[['everyday', 'Everyday'], ['saver', 'Buy-in']]} onChange={v => saveRow('items', i.id, { tier: v })} /></td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
                       <Text value={i.limitCount || ''} w={44} num onSave={v => saveRow('items', i.id, { limitCount: Number(v) || null })} />
@@ -114,33 +114,9 @@ export default function StoreEditor() {
           </div>
         </div>
         <p className="slate" style={{ fontSize: 13, margin: '-18px 0 28px' }}>
-          Leave <b>Limit</b> blank for unlimited. A <b>Hall timer</b> makes the item a hall pass: it starts a countdown and counts toward the "max in hall" setting.
+          <b>Buy-in</b> items are the big ones: students bank toward them (locked), then buy and go on the list (Teacher → Buy-ins). Limit and hall timer don't apply to them. Leave <b>Limit</b> blank for unlimited. A <b>Hall timer</b> makes the item a hall pass: it starts a countdown and counts toward the "max in hall" setting.
         </p>
 
-        <h2>Class goals</h2>
-        <div className="card" style={{ marginBottom: 28 }}>
-          <table className="cfg-table">
-            <thead><tr><th style={{ paddingLeft: 14 }}>Icon</th><th>Name</th><th>Goal</th><th>Saved so far</th><th>On</th><th /></tr></thead>
-            <tbody>
-              {data.goals.map((g: Goal) => (
-                <tr key={g.id}>
-                  <td style={{ paddingLeft: 14 }}><IconPick value={g.icon} onPick={v => saveRow('goals', g.id, { icon: v })} /></td>
-                  <td><Text value={g.label} w={220} onSave={v => saveRow('goals', g.id, { label: v })} /></td>
-                  <td><Text value={g.target} w={70} num onSave={v => saveRow('goals', g.id, { target: Number(v) || 1 })} /></td>
-                  <td>
-                    <span className="mono">{g.saved}</span>
-                    {g.saved > 0 && <button className="btn sm ghost" onClick={() => { if (confirm(`Empty the ${g.label} jar back to 0? (Do this after the class enjoys it.)`)) saveRow('goals', g.id, { saved: 0 }) }}>Empty jar</button>}
-                  </td>
-                  <td><input type="checkbox" checked={g.active} onChange={e => saveRow('goals', g.id, { active: e.target.checked })} style={{ width: 20, height: 20 }} /></td>
-                  <td style={{ textAlign: 'right', paddingRight: 10 }}><button className="x-btn" onClick={() => del('goals', g.id, g.label)}><Icon name="x" size={16} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ padding: 10 }}>
-            <button className="btn sm" onClick={() => saveRow('goals', null, { label: 'New goal', target: 300, saved: 0, icon: 'trophy', active: true, order: nextOrder(data.goals) })}>+ Add class goal</button>
-          </div>
-        </div>
       </div>
     </div>
   )
