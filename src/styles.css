@@ -282,3 +282,10 @@ button:disabled { cursor: default; }
 .key .ic { opacity: .7; }
 .tick { display: inline-flex; align-items: center; justify-content: center; }
 .stu-tile .check .ic, .name-tile .badge .ic { display: block; }
+
+.adj-btn {
+  width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); background: var(--cloud);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.adj-btn:active { transform: scale(.92); background: var(--border); }
+.passcode { min-width: 64px; padding: 4px 8px; border-radius: 6px; background: var(--cloud); font-size: 15px; letter-spacing: 2px; text-align: center; }

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useData } from '../../lib/data'
-import { addStudents, updateStudent, undoTx } from '../../lib/actions'
-import { Amt, Overlay } from '../../components/ui'
+import { addStudents, updateStudent, undoTx, award } from '../../lib/actions'
+import { Amt, Overlay, Icon, PinPad } from '../../components/ui'
 import { useHistory, HistoryList } from '../StudentAccount'
 import type { Student } from '../../lib/types'
 
@@ -47,13 +47,9 @@ export default function Students() {
               {data.students.map(s => (
                 <tr key={s.id}>
                   <td style={{ paddingLeft: 16 }}><NameEdit s={s} /></td>
-                  <td><Amt n={s.balance} className={s.balance < 0 ? 'neg' : ''} /></td>
+                  <td><BalanceAdjust s={s} /></td>
                   <td className="mono slate">{s.earned}</td>
-                  <td>
-                    {s.passcode
-                      ? <button className="btn sm" onClick={() => { if (confirm(`Reset ${s.name}'s passcode? They'll create a new one next time they sign in.`)) updateStudent(s.id, { passcode: undefined }) }}>Reset</button>
-                      : <span className="muted" style={{ fontSize: 13 }}>Not set yet</span>}
-                  </td>
+                  <td><PasscodeCell s={s} /></td>
                   <td style={{ textAlign: 'right', paddingRight: 12, whiteSpace: 'nowrap' }}>
                     <button className="btn sm" onClick={() => setViewing(s)}>History</button>{' '}
                     <button className="btn sm ghost" onClick={() => { if (confirm(`Remove ${s.name}? Their history is kept and you can restore them.`)) updateStudent(s.id, { active: false }) }}>Remove</button>
@@ -104,5 +100,64 @@ function HistoryModal({ s, onClose }: { s: Student; onClose: () => void }) {
         <button className="btn block" style={{ marginTop: 16 }} onClick={onClose}>Close</button>
       </div>
     </Overlay>
+  )
+}
+
+/**
+ * − / + buttons. Taps are added up and saved as ONE history entry about
+ * 1.5 seconds after the last tap, so tapping + five times is a single "+5".
+ * Counts toward the leaderboard like any other bonus or fine.
+ */
+function BalanceAdjust({ s }: { s: Student }) {
+  const [pending, setPending] = useState(0)
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const latest = useRef({ s, pending })
+  latest.current = { s, pending }
+
+  const flush = () => {
+    const { s, pending } = latest.current
+    if (!pending) return
+    setPending(0)
+    award([s], pending > 0 ? 'Teacher adjustment' : 'Teacher deduction', pending, pending > 0 ? 'bonus' : 'fine')
+  }
+  const bump = (n: number) => {
+    setPending(p => p + n)
+    clearTimeout(timer.current)
+    timer.current = setTimeout(flush, 1500)
+  }
+  // Save anything still pending if the tab is closed mid-adjustment.
+  useEffect(() => () => { clearTimeout(timer.current); flush() }, [])
+
+  const shown = s.balance + pending
+  return (
+    <div className="row" style={{ gap: 6 }}>
+      <button className="adj-btn" onClick={() => bump(-1)} title="Take 1 away"><Icon name="minus" size={16} /></button>
+      <span style={{ minWidth: 54, textAlign: 'center' }}><Amt n={shown} className={shown < 0 ? 'neg' : ''} /></span>
+      <button className="adj-btn" onClick={() => bump(1)} title="Add 1"><Icon name="plus" size={16} /></button>
+      {pending !== 0 && <span className={`mono ${pending > 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13 }}>{pending > 0 ? '+' : ''}{pending}</span>}
+    </div>
+  )
+}
+
+/** See, change, or clear a student's passcode. */
+function PasscodeCell({ s }: { s: Student }) {
+  const [show, setShow] = useState(false)
+  const [setting, setSetting] = useState(false)
+  return (
+    <div className="row" style={{ gap: 6 }}>
+      {s.passcode
+        ? <button className="mono passcode" onClick={() => setShow(v => !v)} title={show ? 'Hide' : 'Tap to show'}>{show ? s.passcode : '••••'}</button>
+        : <span className="muted" style={{ fontSize: 13, minWidth: 64 }}>Not set</span>}
+      <button className="btn sm" onClick={() => setSetting(true)}>{s.passcode ? 'Change' : 'Set'}</button>
+      {s.passcode && (
+        <button className="btn sm ghost" title="Student makes a new one at next sign-in"
+          onClick={() => { if (confirm(`Clear ${s.name}'s passcode? They'll create a new one the next time they tap their name.`)) updateStudent(s.id, { passcode: undefined }) }}>Clear</button>
+      )}
+      {setting && (
+        <PinPad title={`New passcode for ${s.name}`} subtitle="Tell the student their new code"
+          onCancel={() => setSetting(false)}
+          onComplete={async code => { await updateStudent(s.id, { passcode: code }); setSetting(false); setShow(true); return true }} />
+      )}
+    </div>
   )
 }
