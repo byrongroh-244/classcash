@@ -1,4 +1,4 @@
-# Class Bank
+# Class Bank 
 
 A classroom economy for one class, run from an iPad at the front of the room.
 Students earn credits for daily routines and good behavior, then spend them on
