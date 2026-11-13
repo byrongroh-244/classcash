@@ -1,11 +1,16 @@
-/** Front-of-room display (projector / TV). Read-only, updates live. */
+/**
+ * Front-of-room display. Used two ways:
+ *  - /board on the projector (read-only), and
+ *  - on the front iPad while the store is closed (onTeacher shows a small
+ *    lock button so you can still get into teacher mode there).
+ */
 import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { mmss } from '../lib/dates'
 import { Icon } from '../components/ui'
 import { Celebrations, CheerFeed } from '../components/Celebrate'
 
-export default function Board() {
+export default function Board({ onTeacher }: { onTeacher?: () => void } = {}) {
   const data = useData()
   const [clock, setClock] = useState('')
   useEffect(() => setClock(new Date(data.now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })), [data.now])
@@ -62,6 +67,13 @@ export default function Board() {
               </div>
             )
           })}
+        </div>
+      )}
+      {onTeacher && (
+        <div className="row" style={{ marginTop: '-1vh' }}>
+          <button className="btn sm ghost" style={{ color: '#64748b' }} onClick={onTeacher}><Icon name="lock-simple" size={16} light style={{ opacity: .5 }} /> Teacher</button>
+          <span className="grow" />
+          <span style={{ color: '#64748b', fontSize: 14 }}>The store opens after the lesson</span>
         </div>
       )}
       {data.settings.cheerBoard && <Celebrations />}

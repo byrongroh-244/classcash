@@ -111,6 +111,7 @@ export function lastUndoableBatch(data: Data): { batch: string; label: string; c
 export type BuyCheck = { ok: true } | { ok: false; reason: string; short: string }
 
 export function canBuy(data: Data, s: Student, item: StoreItem): BuyCheck {
+  if (!data.settings.storeOpen) return { ok: false, reason: 'The store is closed right now.', short: 'Store closed' }
   if (!item.active) return { ok: false, reason: 'This item is not available right now.', short: 'Unavailable' }
   if (item.limitCount) {
     const used = usedCount(data, s.id, item)

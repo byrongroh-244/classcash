@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   teacherTimeoutMin: 5,
   cheerBoard: true,
   cheerKiosk: true,
+  storeOpen: true,
 }
 
 type NoId<T> = Omit<T, 'id'>

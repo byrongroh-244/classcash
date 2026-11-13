@@ -13,6 +13,8 @@ export interface Settings {
   cheerBoard: boolean
   /** Same, on the iPad's name screen (when no student is signed in). */
   cheerKiosk: boolean
+  /** Closed = the front iPad shows the leaderboard and nothing can be bought. */
+  storeOpen: boolean
 }
 
 export interface Student {

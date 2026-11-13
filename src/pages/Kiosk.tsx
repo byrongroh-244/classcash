@@ -3,13 +3,14 @@
  * The small "Teacher" button (PIN) switches to teacher mode on this same page,
  * so there's no other URL to swipe back to.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { updateStudent } from '../lib/actions'
 import { mmss } from '../lib/dates'
 import { DemoBanner, PinPad, Icon } from '../components/ui'
 import StudentAccount from './StudentAccount'
 import { Celebrations } from '../components/Celebrate'
+import Board from './Board'
 import Teacher from './Teacher'
 import type { Student } from '../lib/types'
 
@@ -21,10 +22,32 @@ export default function Kiosk() {
   const [stage, setStage] = useState<'code' | 'new1' | 'new2' | null>(null)
   const [newCode, setNewCode] = useState('')
   const [loggedIn, setLoggedIn] = useState<string | null>(null)
+  const storeOpen = data.settings.storeOpen
+
+  // Store closed from the other iPad → sign out whoever is on this one.
+  useEffect(() => {
+    if (!storeOpen) { setLoggedIn(null); setPicked(null); setStage(null); setNewCode('') }
+  }, [storeOpen])
 
   if (!data.ready) return <div className="screen" style={{ alignItems: 'center', justifyContent: 'center' }}><p className="muted">Loading…</p></div>
 
   if (mode === 'teacher') return <Teacher onLock={() => setMode('students')} />
+
+  const teacherPin = pinFor === 'teacher' && (
+    <PinPad
+      title="Teacher PIN"
+      onCancel={() => setPinFor(null)}
+      onComplete={code => {
+        if (code !== data.settings.pin) return false
+        setPinFor(null); setMode('teacher'); return true
+      }}
+    />
+  )
+
+  if (!storeOpen) return <>
+    <Board onTeacher={() => setPinFor('teacher')} />
+    {teacherPin}
+  </>
 
   const me = loggedIn ? data.students.find(s => s.id === loggedIn) : null
   if (me) return <StudentAccount student={me} onDone={() => setLoggedIn(null)} />
@@ -66,16 +89,7 @@ export default function Kiosk() {
       </div>
       {data.settings.cheerKiosk && !picked && !pinFor && <Celebrations size="kiosk" />}
 
-      {pinFor === 'teacher' && (
-        <PinPad
-          title="Teacher PIN"
-          onCancel={() => setPinFor(null)}
-          onComplete={code => {
-            if (code !== data.settings.pin) return false
-            setPinFor(null); setMode('teacher'); return true
-          }}
-        />
-      )}
+      {teacherPin}
 
       {picked && stage === 'code' && (
         <PinPad

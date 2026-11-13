@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../lib/data'
+import { saveSettings } from '../lib/actions'
 import { DemoBanner, useIdle, Icon } from '../components/ui'
 import Dashboard from './teacher/Dashboard'
 import Daily from './teacher/Daily'
@@ -33,6 +34,13 @@ export default function Teacher({ onLock }: { onLock: () => void }) {
           ))}
         </div>
         <div className="grow" />
+        <button className={`store-switch ${data.settings.storeOpen ? 'open' : ''}`}
+          title="Closed: the front iPad shows the leaderboard. Open: students can sign in and shop."
+          onClick={() => saveSettings({ storeOpen: !data.settings.storeOpen })}>
+          <Icon name="storefront" size={18} light={data.settings.storeOpen} />
+          Store {data.settings.storeOpen ? 'open' : 'closed'}
+          <span className={`switch ${data.settings.storeOpen ? 'on' : ''}`}><span /></span>
+        </button>
         <button className="btn dark" style={{ whiteSpace: 'nowrap' }} onClick={onLock}><Icon name="lock-simple" size={18} light /> Lock</button>
       </div>
       {tab === 'dash' && <Dashboard />}
