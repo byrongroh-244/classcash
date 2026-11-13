@@ -10,7 +10,7 @@ import { mmss } from '../lib/dates'
 import { Icon } from '../components/ui'
 import { Celebrations, CheerFeed } from '../components/Celebrate'
 
-export default function Board({ onTeacher }: { onTeacher?: () => void } = {}) {
+export default function Board({ onTeacher, onOpenStore }: { onTeacher?: () => void; onOpenStore?: () => void } = {}) {
   const data = useData()
   const [clock, setClock] = useState('')
   useEffect(() => setClock(new Date(data.now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })), [data.now])
@@ -73,7 +73,9 @@ export default function Board({ onTeacher }: { onTeacher?: () => void } = {}) {
         <div className="row" style={{ marginTop: '-1vh' }}>
           <button className="btn sm ghost" style={{ color: '#64748b' }} onClick={onTeacher}><Icon name="lock-simple" size={16} light style={{ opacity: .5 }} /> Teacher</button>
           <span className="grow" />
-          <span style={{ color: '#64748b', fontSize: 14 }}>The store opens after the lesson</span>
+          {onOpenStore && (
+            <button className="btn open-store-btn" onClick={onOpenStore}><Icon name="storefront" size={18} light /> Open store</button>
+          )}
         </div>
       )}
       {data.settings.cheerBoard && <Celebrations />}

@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
-import { updateStudent } from '../lib/actions'
+import { updateStudent, saveSettings } from '../lib/actions'
 import { mmss } from '../lib/dates'
 import { DemoBanner, PinPad, Icon } from '../components/ui'
 import StudentAccount from './StudentAccount'
@@ -17,7 +17,7 @@ import type { Student } from '../lib/types'
 export default function Kiosk() {
   const data = useData()
   const [mode, setMode] = useState<'students' | 'teacher'>('students')
-  const [pinFor, setPinFor] = useState<'teacher' | null>(null)
+  const [pinFor, setPinFor] = useState<'teacher' | 'open' | 'close' | null>(null)
   const [picked, setPicked] = useState<Student | null>(null)
   const [stage, setStage] = useState<'code' | 'new1' | 'new2' | null>(null)
   const [newCode, setNewCode] = useState('')
@@ -33,19 +33,25 @@ export default function Kiosk() {
 
   if (mode === 'teacher') return <Teacher onLock={() => setMode('students')} />
 
-  const teacherPin = pinFor === 'teacher' && (
+  // One PIN pad for: entering teacher mode, or opening / closing the store right here.
+  const teacherPin = pinFor && (
     <PinPad
-      title="Teacher PIN"
+      title={pinFor === 'open' ? 'Open the store' : pinFor === 'close' ? 'Close the store' : 'Teacher PIN'}
+      subtitle={pinFor === 'teacher' ? undefined : 'Enter your teacher PIN'}
       onCancel={() => setPinFor(null)}
-      onComplete={code => {
+      onComplete={async code => {
         if (code !== data.settings.pin) return false
-        setPinFor(null); setMode('teacher'); return true
+        const action = pinFor
+        setPinFor(null)
+        if (action === 'teacher') setMode('teacher')
+        else await saveSettings({ storeOpen: action === 'open' })
+        return true
       }}
     />
   )
 
   if (!storeOpen) return <>
-    <Board onTeacher={() => setPinFor('teacher')} />
+    <Board onTeacher={() => setPinFor('teacher')} onOpenStore={() => setPinFor('open')} />
     {teacherPin}
   </>
 
@@ -81,7 +87,10 @@ export default function Kiosk() {
             )}
           </div>
           <div className="kiosk-foot">
-            <button className="btn sm ghost" onClick={() => setPinFor('teacher')}><Icon name="lock-simple" size={16} /> Teacher</button>
+            <div className="row">
+              <button className="btn sm ghost" onClick={() => setPinFor('teacher')}><Icon name="lock-simple" size={16} /> Teacher</button>
+              <button className="btn sm" onClick={() => setPinFor('close')}><Icon name="storefront" size={16} /> Close store</button>
+            </div>
             <span className="muted" style={{ fontSize: 12 }}>{data.students.length} students</span>
           </div>
         </div>
