@@ -9,6 +9,10 @@ export interface Settings {
   maxInHall: number
   /** Minutes of no taps before teacher mode locks itself. */
   teacherTimeoutMin: number
+  /** Confetti shout-out on the projector board when you give Dashboard points. */
+  cheerBoard: boolean
+  /** Same, on the iPad's name screen (when no student is signed in). */
+  cheerKiosk: boolean
 }
 
 export interface Student {
@@ -84,6 +88,8 @@ export interface Tx {
   /** Teacher actions done together (e.g. one tap for 5 students) share a batch id. */
   batch?: string
   undone?: boolean
+  /** Show a confetti shout-out for this (Dashboard bonuses — not daily, fines or corrections). */
+  cheer?: boolean
   /** This purchase started a hall pass (undoing it ends the pass). */
   hall?: boolean
   /** On a 'reverse' tx: the id of the tx it reverses. */

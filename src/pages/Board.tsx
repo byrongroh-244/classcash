@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { mmss } from '../lib/dates'
 import { Icon } from '../components/ui'
+import { Celebrations, CheerFeed } from '../components/Celebrate'
 
 export default function Board() {
   const data = useData()
@@ -23,7 +24,7 @@ export default function Board() {
         {rows.map((r, i) => (
           <div key={r.id} className="board-row">
             <span className={`lb-rank r${i + 1}`}>{i + 1}</span>
-            <span style={{ width: '22%', fontWeight: 600 }}>{r.name}</span>
+            <span style={{ width: '36%', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
             <div className="bar"><div style={{ width: `${(r.score / max) * 100}%`, background: 'linear-gradient(90deg,#eab308,#fde68a)' }} /></div>
             <span className="mono" style={{ color: '#fde68a', minWidth: '5vw', textAlign: 'right' }}>{r.score}</span>
           </div>
@@ -42,6 +43,7 @@ export default function Board() {
         <span className="mono" style={{ fontSize: '4vh', color: '#94a3b8', marginLeft: '2vw' }}>{clock}</span>
       </div>
       <div className="board-cols">
+        <CheerFeed />
         <Panel title="Top earners this week" rows={week} />
         <Panel title="All-time leaders" rows={all} />
       </div>
@@ -62,6 +64,7 @@ export default function Board() {
           })}
         </div>
       )}
+      {data.settings.cheerBoard && <Celebrations />}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { updateStudent } from '../lib/actions'
 import { mmss } from '../lib/dates'
 import { DemoBanner, PinPad, Icon } from '../components/ui'
 import StudentAccount from './StudentAccount'
+import { Celebrations } from '../components/Celebrate'
 import Teacher from './Teacher'
 import type { Student } from '../lib/types'
 
@@ -63,6 +64,7 @@ export default function Kiosk() {
         </div>
         <SidePanel />
       </div>
+      {data.settings.cheerKiosk && !picked && !pinFor && <Celebrations size="kiosk" />}
 
       {pinFor === 'teacher' && (
         <PinPad

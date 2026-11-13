@@ -114,7 +114,7 @@ export default function Dashboard() {
       {custom && (
         <CustomModal kind={custom} who={names(selected)} onClose={() => setCustom(null)} onApply={async (amount, reason) => {
           const signed = custom === 'fine' ? -amount : amount
-          const batch = await award(selected, reason, signed, custom === 'fine' ? 'fine' : 'bonus')
+          const batch = await award(selected, reason, signed, custom === 'fine' ? 'fine' : 'bonus', undefined, custom !== 'fine')
           setToast({ text: `${signed > 0 ? '+' : ''}${signed} ${reason} for ${names(selected)}`, batch, key: Date.now() })
           setCustom(null); setSel(new Set())
         }} />

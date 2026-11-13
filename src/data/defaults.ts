@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS: Settings = {
   logoutSeconds: 30,
   maxInHall: 1,
   teacherTimeoutMin: 5,
+  cheerBoard: true,
+  cheerKiosk: true,
 }
 
 type NoId<T> = Omit<T, 'id'>

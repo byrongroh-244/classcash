@@ -251,7 +251,7 @@ button:disabled { cursor: default; }
 /* ── Board (projector) ── */
 .board { background: #0b1120; color: #fff; height: 100%; display: flex; flex-direction: column; padding: 3vh 3vw; gap: 3vh; overflow: hidden; }
 .board h1 { font-family: 'Fraunces', serif; font-size: 5vh; }
-.board-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 3vw; flex: 1; min-height: 0; }
+.board-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2vw; flex: 1; min-height: 0; }
 .board-panel { background: #111a2e; border-radius: 2vh; padding: 3vh 2.5vw; display: flex; flex-direction: column; gap: 1.6vh; }
 .board-panel h2 { font-size: 2.6vh; color: #94a3b8; text-transform: uppercase; letter-spacing: .3vh; font-weight: 600; }
 .board-row { display: flex; align-items: center; gap: 1.5vw; font-size: 4vh; }
@@ -289,3 +289,37 @@ button:disabled { cursor: default; }
 }
 .adj-btn:active { transform: scale(.92); background: var(--border); }
 .passcode { min-width: 64px; padding: 4px 8px; border-radius: 6px; background: var(--cloud); font-size: 15px; letter-spacing: 2px; text-align: center; }
+
+/* ── Shout-out celebration ── */
+.cheer {
+  position: fixed; inset: 0; z-index: 250; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(15,23,42,.55), rgba(15,23,42,.85));
+  animation: fade .25s ease; pointer-events: none;
+}
+.cheer-card { text-align: center; color: #fff; animation: cheer-pop .6s cubic-bezier(.2,1.6,.4,1); }
+.cheer-icon {
+  width: 22vh; height: 22vh; margin: 0 auto 3vh; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #34d399, #059669); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 1.4vh rgba(52,211,153,.25), 0 0 8vh rgba(52,211,153,.5);
+}
+.cheer-name { font-size: 11vh; font-weight: 700; line-height: 1.05; text-shadow: 0 .6vh 2vh rgba(0,0,0,.4); padding: 0 4vw; }
+.cheer-pts { display: inline-flex; align-items: center; gap: 1.5vh; font-size: 10vh; font-weight: 700; color: #fde047; margin-top: 2vh; animation: pts-bounce 1s ease .4s 2; }
+.cheer-pts .coin { width: 9vh; height: 9vh; font-size: 9vh; }
+.cheer-label { font-size: 4.5vh; font-weight: 600; opacity: .9; margin-top: 1vh; }
+.cheer.kiosk .cheer-name { font-size: 9vh; }
+.cheer.kiosk .cheer-icon { width: 18vh; height: 18vh; }
+@keyframes cheer-pop { 0% { transform: scale(.3); opacity: 0 } 100% { transform: scale(1); opacity: 1 } }
+@keyframes pts-bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-2vh) scale(1.08) } }
+
+.feed-cheer { display: flex; align-items: center; gap: 1.2vw; padding: 1.2vh 1vw; border-radius: 1.4vh; background: #172036; }
+.feed-cheer.new { animation: flash 1.2s ease 2; }
+.fc-name { font-size: 3vh; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-label { font-size: 2.1vh; color: #94a3b8; }
+.fc-pts { font-size: 3.4vh; color: #fde047; font-weight: 600; }
+@keyframes flash { 50% { background: #14532d; } }
+
+.toggle-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 15px; text-align: left; width: 100%; }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--border); position: relative; flex-shrink: 0; transition: background .15s; }
+.switch > span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .15s; }
+.switch.on { background: var(--green); }
+.switch.on > span { left: 21px; }

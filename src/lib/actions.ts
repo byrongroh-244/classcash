@@ -31,18 +31,18 @@ function addInc(u: Record<string, unknown>, path: string, n: number) {
 // ─── Teacher: give / take ────────────────────────────────────────────────────
 
 /** Give (or fine, with a negative amount) a group of students. Returns the batch id for undo. */
-export async function award(students: Student[], label: string, amount: number, kind: TxKind, refId?: string) {
+export async function award(students: Student[], label: string, amount: number, kind: TxKind, refId?: string, cheer = false) {
   const batch = db.newKey()
   const u: Record<string, unknown> = {}
   for (const s of students) {
-    txUpdates(u, { studentId: s.id, studentName: s.name, amount, earnDelta: amount, kind, label, refId, by: 'teacher', batch })
+    txUpdates(u, { studentId: s.id, studentName: s.name, amount, earnDelta: amount, kind, label, refId, by: 'teacher', batch, cheer: cheer || undefined })
   }
   await db.update(u)
   return batch
 }
 
 export const awardRule = (students: Student[], rule: EarnRule) =>
-  award(students, rule.label, rule.amount, 'earn', rule.id)
+  award(students, rule.label, rule.amount, 'earn', rule.id, true)
 
 /**
  * Daily check-off. `want[studentId][ruleId]` is the desired state; pays what's

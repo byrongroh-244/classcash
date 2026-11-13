@@ -25,6 +25,16 @@ export default function SettingsPage() {
           <Field s={s} k="maxInHall" label="Max students in the hall at once" num help="Applies to store items with a hall timer. Your free passes ignore it." />
         </div>
 
+        <h2>Shout-outs</h2>
+        <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+          <p className="slate" style={{ fontSize: 14, marginBottom: 12 }}>
+            When you give points from the Dashboard (a reason button or a custom bonus), the screen bursts with confetti and shows the student's name.
+            Daily check-off, fines, Students-tab corrections and purchases never trigger it.
+          </p>
+          <Toggle on={s.cheerBoard} label="Celebrate on the projector board" onChange={v => saveSettings({ cheerBoard: v })} />
+          <Toggle on={s.cheerKiosk} label="Celebrate on the iPad name screen" onChange={v => saveSettings({ cheerKiosk: v })} />
+        </div>
+
         <h2>Teacher PIN</h2>
         <div className="card row" style={{ padding: 18, marginBottom: 24 }}>
           <span className="grow slate">Used to open teacher mode. {s.pin === '0000' && <b className="neg">Still the default (0000) — change it!</b>}</span>
@@ -76,5 +86,14 @@ function Field({ s, k, label, num, help }: { s: Settings; k: keyof Settings; lab
         onBlur={() => { const val = num ? Math.max(1, Number(v) || 1) : v.trim(); if (String(val) !== String(s[k])) saveSettings({ [k]: val }); setV(String(val)) }} />
       {help && <small className="muted">{help}</small>}
     </label>
+  )
+}
+
+function Toggle({ on, label, onChange }: { on: boolean; label: string; onChange: (v: boolean) => void }) {
+  return (
+    <button className="toggle-row" onClick={() => onChange(!on)}>
+      <span className={`switch ${on ? 'on' : ''}`}><span /></span>
+      <span>{label}</span>
+    </button>
   )
 }
