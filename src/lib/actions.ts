@@ -7,7 +7,7 @@ import { db, INC } from './db'
 import { dateStr } from './dates'
 import type { Student, EarnRule, StoreItem, Tx, TxKind, Settings } from './types'
 import type { Data } from './data'
-import { usedCount, banked, onList } from './data'
+import { usedCount, banked, onList, dailyColumns } from './data'
 
 type NewTx = Omit<Tx, 'id' | 'date' | 'ts'>
 
@@ -51,7 +51,7 @@ export const awardRule = (students: Student[], rule: EarnRule) =>
 export async function saveDaily(data: Data, want: Record<string, Record<string, boolean>>) {
   const u: Record<string, unknown> = {}
   const batch = db.newKey()
-  const daily = data.rules.filter(r => r.kind === 'daily')
+  const daily = dailyColumns(data)
   let paid = 0, reversed = 0
   for (const s of data.students) {
     for (const r of daily) {

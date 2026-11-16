@@ -55,8 +55,12 @@ export interface StoreItem {
   id: string
   label: string
   price: number
-  /** saver = buy-in: students bank credits toward it, then go on its list. */
-  tier: 'everyday' | 'saver'
+  /**
+   * everyday = students buy it at the iPad.
+   * saver    = buy-in: students bank credits toward it, then go on its list.
+   * daily    = not in the student store; charged from the teacher's Daily check-off.
+   */
+  tier: 'everyday' | 'saver' | 'daily'
   icon: string
   /** e.g. 2 per day; 0/undefined = unlimited. */
   limitCount?: number

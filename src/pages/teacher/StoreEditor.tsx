@@ -83,7 +83,7 @@ export default function StoreEditor() {
           </div>
         </div>
         <p className="slate" style={{ fontSize: 13, margin: '-18px 0 28px' }}>
-          <b>Daily</b> items are paid from the Daily check-off screen (once per student per day). <b>Anytime</b> items are buttons on the Dashboard. Type a <b>negative</b> amount (e.g. −8) to make an item a charge — a daily charge starts unchecked, and you check whoever it applies to.
+          <b>Daily</b> items are paid from the Daily check-off screen (once per student per day). <b>Anytime</b> items are buttons on the Dashboard.
         </p>
 
         <h2>Store</h2>
@@ -96,7 +96,7 @@ export default function StoreEditor() {
                   <td style={{ paddingLeft: 14 }}><IconPick value={i.icon} onPick={v => saveRow('items', i.id, { icon: v })} /></td>
                   <td><Text value={i.label} w={190} onSave={v => saveRow('items', i.id, { label: v })} /></td>
                   <td><Text value={i.price} w={60} num onSave={v => saveRow('items', i.id, { price: Number(v) || 0 })} /></td>
-                  <td><Seg value={i.tier} options={[['everyday', 'Everyday'], ['saver', 'Buy-in']]} onChange={v => saveRow('items', i.id, { tier: v })} /></td>
+                  <td><Seg value={i.tier} options={[['everyday', 'Everyday'], ['saver', 'Buy-in'], ['daily', 'Daily check-off']]} onChange={v => saveRow('items', i.id, { tier: v })} /></td>
                   <td>
                     <div className="row" style={{ gap: 4 }}>
                       <Text value={i.limitCount || ''} w={44} num onSave={v => saveRow('items', i.id, { limitCount: Number(v) || null })} />
@@ -116,7 +116,7 @@ export default function StoreEditor() {
           </div>
         </div>
         <p className="slate" style={{ fontSize: 13, margin: '-18px 0 28px' }}>
-          <b>Buy-in</b> items are the big ones: students bank toward them (locked), then buy and go on the list (Teacher → Buy-ins). Limit and hall timer don't apply to them. Leave <b>Limit</b> blank for unlimited. A <b>Hall timer</b> makes the item a hall pass: it starts a countdown and counts toward the "max in hall" setting.
+          <b>Daily check-off</b> items (like a preferred seat) aren't in the student store — they show up as a red column in your Daily check-off, and you check whoever to charge. <b>Buy-in</b> items are the big ones: students bank toward them (locked), then buy and go on the list (Teacher → Buy-ins). Limit and hall timer don't apply to them. Leave <b>Limit</b> blank for unlimited. A <b>Hall timer</b> makes the item a hall pass: it starts a countdown and counts toward the "max in hall" setting.
         </p>
 
       </div>

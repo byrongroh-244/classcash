@@ -5,7 +5,7 @@
  * applied as differences (newly checked → paid, unchecked → taken back).
  */
 import { useEffect, useMemo, useState } from 'react'
-import { useData } from '../../lib/data'
+import { useData, dailyColumns } from '../../lib/data'
 import { saveDaily } from '../../lib/actions'
 import { shortDate } from '../../lib/dates'
 import { Toast, Icon } from '../../components/ui'
@@ -14,7 +14,7 @@ type Want = Record<string, Record<string, boolean>>
 
 export default function Daily() {
   const data = useData()
-  const rules = data.rules.filter(r => r.kind === 'daily')
+  const rules = dailyColumns(data)
 
   const fromDb = useMemo<Want>(() => {
     const w: Want = {}

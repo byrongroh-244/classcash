@@ -167,3 +167,14 @@ export const bankedTotal = (data: Data, studentId: string) =>
   Object.values(data.banks[studentId] || {}).reduce((n, v) => n + (v || 0), 0)
 export const onList = (data: Data, studentId: string, itemId: string) =>
   (data.lists[itemId] || []).some(e => e.studentId === studentId)
+
+/**
+ * Columns of the Daily check-off: daily earning items, then store items set to
+ * "Daily check-off" (as charges, i.e. negative amounts).
+ */
+export function dailyColumns(data: Data): EarnRule[] {
+  const charges: EarnRule[] = data.items
+    .filter(i => i.active && i.tier === 'daily' && i.price > 0)
+    .map(i => ({ id: i.id, label: i.label, amount: -i.price, kind: 'daily', icon: i.icon, order: 1000 + (i.order || 0) }))
+  return [...data.rules.filter(r => r.kind === 'daily'), ...charges]
+}
