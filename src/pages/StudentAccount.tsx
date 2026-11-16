@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useData, usedCount, banked, bankedTotal, onList } from '../lib/data'
 import { db } from '../lib/db'
 import { buy, canBuy, bankToward, bankRoom } from '../lib/actions'
@@ -29,7 +29,8 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
     else setMsg("That didn't go through — check your balance and try again.")
   }
 
-  if (success) return <PurchaseDone item={success.item} at={success.at} name={s.name} onClose={() => { setSuccess(null); onDone() }} />
+  if (success) return <PurchaseDone item={success.item} at={success.at} name={s.name} balance={s.balance}
+    onKeepShopping={() => setSuccess(null)} onLogOut={() => { setSuccess(null); onDone() }} />
 
   const statusFor = (item: StoreItem) => {
     const c = canBuy(data, s, item)
@@ -165,21 +166,29 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
 }
 
 
-/** Big "show your teacher" screen after a purchase. */
-function PurchaseDone({ item, at, name, onClose }: { item: StoreItem; at: number; name: string; onClose: () => void }) {
+/**
+ * Big "show your teacher" screen after a purchase, then the student chooses:
+ * keep shopping or log out. Logs out by itself after 20 seconds untouched.
+ */
+function PurchaseDone({ item, at, name, balance, onKeepShopping, onLogOut }: {
+  item: StoreItem; at: number; name: string; balance: number; onKeepShopping: () => void; onLogOut: () => void
+}) {
   const data = useData()
   const pass = data.hall.find(h => h.name === name && h.start >= at - 5000)
-  const close = useRef(onClose)
-  close.current = onClose
-  useEffect(() => { const id = setTimeout(() => close.current(), 12000); return () => clearTimeout(id) }, [])
+  const left = useIdle(20, onLogOut)
   return (
-    <div className="screen" style={{ alignItems: 'center', justifyContent: 'center', background: 'var(--green)', color: '#fff', textAlign: 'center', gap: 14 }} onClick={onClose}>
+    <div className="screen done-screen">
       <Icon name={item.icon} size={110} light />
       <div className="serif" style={{ fontSize: 44, fontWeight: 700 }}>{name}</div>
       <div style={{ fontSize: 28, fontWeight: 600 }}>{item.label}</div>
       {pass && <div className="mono" style={{ fontSize: 22, opacity: .9 }}>Back by {timeStr(pass.start + pass.minutes * 60000)}</div>}
       {item.tier === 'saver' && <div style={{ fontSize: 22, opacity: .95 }}>You're on the list!</div>}
-      <div style={{ fontSize: 16, opacity: .85, marginTop: 20 }}>Purchased at {timeStr(at)} · tap to close</div>
+      <div style={{ fontSize: 16, opacity: .85 }}>Purchased at {timeStr(at)} · {balance} {data.settings.currency} left</div>
+      <div className="row" style={{ gap: 14, marginTop: 28 }}>
+        <button className="btn lg done-btn" onClick={onKeepShopping}>Keep shopping</button>
+        <button className="btn lg done-btn primary" onClick={onLogOut}><Icon name="sign-out" size={20} /> Log out</button>
+      </div>
+      <div style={{ fontSize: 13, opacity: .75, marginTop: 6 }}>Logging out in {Math.max(0, left)}s</div>
     </div>
   )
 }

@@ -346,3 +346,7 @@ button:disabled { cursor: default; }
 .tick.charge.on { background: var(--red); border-color: var(--red); }
 .tick.charge.paid.on { background: var(--red-bg); border-color: var(--red); }
 .tick.charge.paid.on .ic { filter: none; }
+
+.done-screen { align-items: center; justify-content: center; background: var(--green); color: #fff; text-align: center; gap: 14px; }
+.done-btn { min-width: 200px; background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.5); color: #fff; }
+.done-btn.primary { background: #fff; border-color: #fff; color: var(--green-ink); }
