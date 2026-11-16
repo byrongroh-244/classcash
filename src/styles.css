@@ -357,3 +357,8 @@ button:disabled { cursor: default; }
 }
 .grip:active, tr.dragging .grip { opacity: 1; cursor: grabbing; background: var(--cloud); }
 tr.dragging td { background: var(--white); }
+
+.side-cheer { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #1e293b; font-size: 14px; }
+.side-cheer.new { animation: flash 1.2s ease 2; }
+.sc-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-label { font-size: 12px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

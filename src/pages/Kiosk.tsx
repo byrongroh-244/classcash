@@ -9,7 +9,7 @@ import { updateStudent, saveSettings } from '../lib/actions'
 import { mmss } from '../lib/dates'
 import { DemoBanner, PinPad, Icon } from '../components/ui'
 import StudentAccount from './StudentAccount'
-import { Celebrations } from '../components/Celebrate'
+import { Celebrations, cheersToday } from '../components/Celebrate'
 import Board from './Board'
 import Teacher from './Teacher'
 import type { Student } from '../lib/types'
@@ -137,12 +137,11 @@ export default function Kiosk() {
   )
 }
 
-/** Dark right-hand panel: who's in the hall, this week's top 5, buy-in counts. */
+/** Dark right-hand panel: who's in the hall, this week's top 5, today's shout-outs. */
 export function SidePanel() {
   const data = useData()
   const top = leaderboard(data, 'week').filter(r => r.score > 0).slice(0, 5)
-  const buyIns = data.items.filter(i => i.active && i.tier === 'saver')
-  const total = data.students.length || 1
+  const cheers = cheersToday(data).slice(0, 8)
   return (
     <aside className="side">
       {data.hall.length > 0 && (
@@ -167,24 +166,20 @@ export function SidePanel() {
           </div>
         ))}
       </div>
-      {buyIns.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div className="label">Buy-ins</div>
-          {buyIns.map(i => {
-            const n = (data.lists[i.id] || []).length
-            return (
-              <div key={i.id} className="jar">
-                <div className="row" style={{ marginBottom: 8, fontSize: 15 }}>
-                  <Icon name={i.icon} size={20} light /><span className="grow" style={{ fontWeight: 600 }}>{i.label}</span>
-                  <span className="mono" style={{ fontSize: 13, color: '#fde68a' }}>{i.price}</span>
-                </div>
-                <div className="bar"><div style={{ width: `${Math.min(100, (n / total) * 100)}%` }} /></div>
-                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>{n} of {data.students.length} in</div>
-              </div>
-            )
-          })}
-        </div>
-      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="label">Shout-outs today</div>
+        {cheers.length === 0 && <div style={{ color: '#64748b', fontSize: 14 }}>Points for great work show up here.</div>}
+        {cheers.map((c, i) => (
+          <div key={c.key} className={`side-cheer ${i === 0 && data.now - c.ts < 10000 ? 'new' : ''}`}>
+            <Icon name={c.icon} size={22} light />
+            <div className="grow" style={{ minWidth: 0 }}>
+              <div className="sc-name">{c.whole ? 'Whole class' : c.names.length <= 3 ? c.names.join(', ') : `${c.names.length} students`}</div>
+              <div className="sc-label">{c.label}</div>
+            </div>
+            <span className="mono" style={{ color: '#fde68a', fontWeight: 600 }}>+{c.amount}</span>
+          </div>
+        ))}
+      </div>
     </aside>
   )
 }

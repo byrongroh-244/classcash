@@ -35,6 +35,17 @@ export default function SettingsPage() {
           <Toggle on={s.cheerKiosk} label="Celebrate on the iPad name screen" onChange={v => saveSettings({ cheerKiosk: v })} />
         </div>
 
+        <h2>Leaderboard screen</h2>
+        <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+          <p className="slate" style={{ fontSize: 14, marginBottom: 12 }}>
+            What the leaderboard shows, on the projector and on the class iPad while the store is closed. The confetti pop-ups are set under Shout-outs above.
+          </p>
+          <Toggle on={s.boardShoutouts} label="Shout-outs today (live feed)" onChange={v => saveSettings({ boardShoutouts: v })} />
+          <Toggle on={s.boardWeek} label="Top earners this week" onChange={v => saveSettings({ boardWeek: v })} />
+          <Toggle on={s.boardAllTime} label="All-time leaders" onChange={v => saveSettings({ boardAllTime: v })} />
+          <Toggle on={s.boardBuyIns} label="Buy-in counts (how many students are in)" onChange={v => saveSettings({ boardBuyIns: v })} />
+        </div>
+
         <h2>Teacher PIN</h2>
         <div className="card row" style={{ padding: 18, marginBottom: 24 }}>
           <span className="grow slate">Used to open teacher mode. {s.pin === '0000' && <b className="neg">Still the default (0000) — change it!</b>}</span>

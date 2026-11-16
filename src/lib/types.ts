@@ -15,6 +15,11 @@ export interface Settings {
   cheerKiosk: boolean
   /** Closed = the front iPad shows the leaderboard and nothing can be bought. */
   storeOpen: boolean
+  /** What the leaderboard screen shows (projector /board and the class iPad while the store is closed). */
+  boardShoutouts: boolean
+  boardWeek: boolean
+  boardAllTime: boolean
+  boardBuyIns: boolean
   /** Set once the old shared class jars have been switched to individual buy-ins. */
   buyIns?: boolean
 }

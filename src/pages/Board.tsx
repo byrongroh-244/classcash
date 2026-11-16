@@ -19,6 +19,8 @@ export default function Board({ onTeacher, onOpenStore }: { onTeacher?: () => vo
   const week = leaderboard(data, 'week').filter(r => r.score > 0).slice(0, 5)
   const all = leaderboard(data, 'all').filter(r => r.score > 0).slice(0, 5)
   const buyIns = data.items.filter(i => i.active && i.tier === 'saver')
+  const show = data.settings
+  const cols = [show.boardShoutouts, show.boardWeek, show.boardAllTime].filter(Boolean).length
   const total = data.students.length || 1
 
   const Panel = ({ title, rows }: { title: string; rows: { id: string; name: string; score: number }[] }) => {
@@ -48,12 +50,12 @@ export default function Board({ onTeacher, onOpenStore }: { onTeacher?: () => vo
         ))}
         <span className="mono" style={{ fontSize: '4vh', color: '#94a3b8', marginLeft: '2vw' }}>{clock}</span>
       </div>
-      <div className="board-cols">
-        <CheerFeed />
-        <Panel title="Top earners this week" rows={week} />
-        <Panel title="All-time leaders" rows={all} />
+      <div className="board-cols" style={{ gridTemplateColumns: `repeat(${Math.max(1, cols)}, 1fr)` }}>
+        {show.boardShoutouts && <CheerFeed />}
+        {show.boardWeek && <Panel title="Top earners this week" rows={week} />}
+        {show.boardAllTime && <Panel title="All-time leaders" rows={all} />}
       </div>
-      {buyIns.length > 0 && (
+      {show.boardBuyIns && buyIns.length > 0 && (
         <div className="board-goals">
           {buyIns.map(i => {
             const n = (data.lists[i.id] || []).length

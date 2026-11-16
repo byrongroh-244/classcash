@@ -14,6 +14,10 @@ export const DEFAULT_SETTINGS: Settings = {
   cheerBoard: true,
   cheerKiosk: true,
   storeOpen: true,
+  boardShoutouts: true,
+  boardWeek: true,
+  boardAllTime: true,
+  boardBuyIns: true,
   buyIns: true,
 }
 
