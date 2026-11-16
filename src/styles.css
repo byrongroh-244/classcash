@@ -342,3 +342,7 @@ button:disabled { cursor: default; }
 
 .open-store-btn { background: #1e293b; border-color: #334155; color: #e2e8f0; }
 .open-store-btn:active { background: #334155; }
+
+.tick.charge.on { background: var(--red); border-color: var(--red); }
+.tick.charge.paid.on { background: var(--red-bg); border-color: var(--red); }
+.tick.charge.paid.on .ic { filter: none; }

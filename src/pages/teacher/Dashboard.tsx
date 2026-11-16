@@ -26,7 +26,7 @@ export default function Dashboard() {
     const who = rule.wholeClass && selected.length === 0 ? data.students : selected
     if (!who.length) return
     const batch = await awardRule(who, rule)
-    setToast({ text: `+${rule.amount} ${rule.label} for ${names(who)}`, batch, key: Date.now() })
+    setToast({ text: `${rule.amount < 0 ? '−' + -rule.amount : '+' + rule.amount} ${rule.label} for ${names(who)}`, batch, key: Date.now() })
     setSel(new Set())
   }
 
@@ -62,9 +62,9 @@ export default function Dashboard() {
           {incident.map(r => {
             const isClass = r.wholeClass && selected.length === 0
             return (
-              <button key={r.id} className={`earn-btn ${r.wholeClass ? 'class' : ''}`}
+              <button key={r.id} className={`earn-btn ${r.amount < 0 ? 'fine' : r.wholeClass ? 'class' : ''}`}
                 disabled={!selected.length && !r.wholeClass} onClick={() => give(r)}>
-                <Icon name={r.icon} size={22} />{r.label}{isClass && ' (all)'}<span className="plus">+{r.amount}</span>
+                <Icon name={r.icon} size={22} />{r.label}{isClass && ' (all)'}<span className="plus">{r.amount < 0 ? `−${-r.amount}` : `+${r.amount}`}</span>
               </button>
             )
           })}

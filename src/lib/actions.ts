@@ -58,7 +58,8 @@ export async function saveDaily(data: Data, want: Record<string, Record<string, 
       const has = data.daily[s.id]?.[r.id]
       const should = !!want[s.id]?.[r.id]
       if (should && !has) {
-        const id = txUpdates(u, { studentId: s.id, studentName: s.name, amount: r.amount, earnDelta: r.amount, kind: 'daily', label: r.label, refId: r.id, by: 'teacher', batch })
+        // A daily charge (negative amount) is like a purchase: it doesn't lower the leaderboard.
+        const id = txUpdates(u, { studentId: s.id, studentName: s.name, amount: r.amount, earnDelta: Math.max(0, r.amount), kind: 'daily', label: r.label, refId: r.id, by: 'teacher', batch })
         u[`daily/${data.today}/${s.id}/${r.id}`] = id
         paid++
       } else if (!should && has) {

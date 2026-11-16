@@ -1,6 +1,7 @@
 /**
- * Daily check-off. Everyone starts checked; uncheck whoever missed something,
- * then tap Pay. Coming back later shows what was paid, and changes are
+ * Daily check-off. Everyone starts checked on earning items; uncheck whoever
+ * missed something, then tap Pay. Items with a negative amount (e.g. a daily
+ * preferred-seat charge) start unchecked — check a student to charge them. Coming back later shows what was paid, and changes are
  * applied as differences (newly checked → paid, unchecked → taken back).
  */
 import { useEffect, useMemo, useState } from 'react'
@@ -19,8 +20,8 @@ export default function Daily() {
     const w: Want = {}
     for (const s of data.students) {
       w[s.id] = {}
-      // Before the first save today, default everyone to checked.
-      for (const r of rules) w[s.id][r.id] = data.dailySaved ? !!data.daily[s.id]?.[r.id] : true
+      // Before the first save today: earning items checked, charges unchecked.
+      for (const r of rules) w[s.id][r.id] = data.dailySaved ? !!data.daily[s.id]?.[r.id] : r.amount >= 0
     }
     return w
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,9 +37,10 @@ export default function Daily() {
     setDirty(true)
     setWant(w => ({ ...w, [sid]: { ...w[sid], [rid]: v } }))
   }
+  // Absent: nothing earned, nothing charged. All: every earning item (charges left as they are).
   const setRow = (sid: string, v: boolean) => {
     setDirty(true)
-    setWant(w => ({ ...w, [sid]: Object.fromEntries(rules.map(r => [r.id, v])) }))
+    setWant(w => ({ ...w, [sid]: Object.fromEntries(rules.map(r => [r.id, r.amount < 0 ? (v ? !!w[sid]?.[r.id] : false) : v])) }))
   }
   const setCol = (rid: string) => {
     const allOn = data.students.every(s => want[s.id]?.[rid])
@@ -47,13 +49,16 @@ export default function Daily() {
   }
 
   // What Pay would do right now.
-  let toPay = 0, toTake = 0
+  // up = credits going to students, down = credits coming out (charges, or earnings taken back)
+  let up = 0, down = 0, changed = 0
   for (const s of data.students) for (const r of rules) {
     const has = !!data.daily[s.id]?.[r.id]; const w = !!want[s.id]?.[r.id]
-    if (w && !has) toPay += r.amount
-    if (!w && has) toTake += r.amount
+    const delta = w && !has ? r.amount : !w && has ? -r.amount : 0
+    if (w !== has) changed++
+    if (delta > 0) up += delta
+    if (delta < 0) down -= delta
   }
-  const changes = toPay > 0 || toTake > 0
+  const changes = changed > 0
 
   const save = async () => {
     setBusy(true)
@@ -77,7 +82,7 @@ export default function Daily() {
         <button className="btn green lg" disabled={busy || (data.dailySaved && !changes)} onClick={save}>
           {data.dailySaved ? (changes ? 'Update' : 'Up to date') : `Pay daily credits`}
           {changes && <span className="mono" style={{ fontSize: 14, opacity: .9 }}>
-            {toPay ? ` +${toPay}` : ''}{toTake ? ` −${toTake}` : ''}
+            {up ? ` +${up}` : ''}{down ? ` −${down}` : ''}
           </span>}
         </button>
       </div>
@@ -88,7 +93,7 @@ export default function Daily() {
               <th>Student</th>
               {rules.map(r => (
                 <th key={r.id}><button onClick={() => setCol(r.id)} title="Toggle whole column">
-                  <Icon name={r.icon} size={24} />{r.label}<div className="muted mono">+{r.amount}</div>
+                  <Icon name={r.icon} size={24} />{r.label}<div className={`mono ${r.amount < 0 ? 'neg' : 'muted'}`}>{r.amount < 0 ? `−${-r.amount}` : `+${r.amount}`}</div>
                 </button></th>
               ))}
               <th />
@@ -96,7 +101,7 @@ export default function Daily() {
           </thead>
           <tbody>
             {data.students.map(s => {
-              const any = rules.some(r => want[s.id]?.[r.id])
+              const any = rules.some(r => r.amount >= 0 && want[s.id]?.[r.id])
               return (
                 <tr key={s.id}>
                   <td>{s.name}</td>
@@ -105,7 +110,7 @@ export default function Daily() {
                     const paid = !!data.daily[s.id]?.[r.id]
                     return (
                       <td key={r.id}>
-                        <button className={`tick ${on ? 'on' : ''} ${paid ? 'paid' : ''}`} onClick={() => set(s.id, r.id, !on)}>{on && <Icon name="check" size={22} light={!paid} />}</button>
+                        <button className={`tick ${on ? 'on' : ''} ${paid ? 'paid' : ''} ${r.amount < 0 ? 'charge' : ''}`} onClick={() => set(s.id, r.id, !on)}>{on && <Icon name="check" size={22} light={!paid} />}</button>
                       </td>
                     )
                   })}
@@ -117,6 +122,7 @@ export default function Daily() {
         </table>
         <p className="muted" style={{ padding: '12px 20px 24px', fontSize: 12 }}>
           Light green = already paid today. Dashed red = paid, but unchecked (Update will take it back).
+          {rules.some(r => r.amount < 0) && <> Red columns are charges: check a student to take {data.settings.currency} from them.</>}
         </p>
       </div>
       {toast && <Toast key={toast} onDone={() => setToast('')}><span className="row"><Icon name="check" size={16} light />{toast}</span></Toast>}

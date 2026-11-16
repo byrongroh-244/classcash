@@ -32,11 +32,13 @@ function IconPick({ value, onPick }: { value: string; onPick: (v: string) => voi
   )
 }
 
-function Text({ value, onSave, w = 200, num }: { value: string | number | undefined; onSave: (v: string) => void; w?: number; num?: boolean }) {
+function Text({ value, onSave, w = 200, num, signed }: { value: string | number | undefined; onSave: (v: string) => void; w?: number; num?: boolean; signed?: boolean }) {
   const [v, setV] = useState(String(value ?? ''))
   return (
-    <input className="input sm" style={{ width: w }} value={v} inputMode={num ? 'numeric' : undefined}
-      onChange={e => setV(num ? e.target.value.replace(/[^0-9]/g, '') : e.target.value)}
+    <input className="input sm" style={{ width: w }} value={v} inputMode={num && !signed ? 'numeric' : undefined}
+      onChange={e => setV(!num ? e.target.value
+        : signed ? e.target.value.replace(/[−–]/g, '-').replace(/[^0-9-]/g, '').replace(/(?!^)-/g, '')
+        : e.target.value.replace(/[^0-9]/g, ''))}
       onBlur={() => { if (v !== String(value ?? '')) onSave(v) }} />
   )
 }
@@ -68,7 +70,7 @@ export default function StoreEditor() {
                 <tr key={r.id}>
                   <td style={{ paddingLeft: 14 }}><IconPick value={r.icon} onPick={v => saveRow('rules', r.id, { icon: v })} /></td>
                   <td><Text value={r.label} w={220} onSave={v => saveRow('rules', r.id, { label: v })} /></td>
-                  <td><Text value={r.amount} w={60} num onSave={v => saveRow('rules', r.id, { amount: Number(v) || 0 })} /></td>
+                  <td><Text value={r.amount} w={60} num signed onSave={v => saveRow('rules', r.id, { amount: Number(v) || 0 })} /></td>
                   <td><Seg value={r.kind} options={[['daily', 'Daily'], ['incident', 'Anytime']]} onChange={v => saveRow('rules', r.id, { kind: v })} /></td>
                   <td>{r.kind === 'incident' && <input type="checkbox" checked={!!r.wholeClass} onChange={e => saveRow('rules', r.id, { wholeClass: e.target.checked })} style={{ width: 20, height: 20 }} />}</td>
                   <td style={{ textAlign: 'right', paddingRight: 10 }}><button className="x-btn" onClick={() => del('rules', r.id, r.label)}><Icon name="x" size={16} /></button></td>
@@ -81,7 +83,7 @@ export default function StoreEditor() {
           </div>
         </div>
         <p className="slate" style={{ fontSize: 13, margin: '-18px 0 28px' }}>
-          <b>Daily</b> items are paid from the Daily check-off screen (once per student per day). <b>Anytime</b> items are buttons on the Dashboard.
+          <b>Daily</b> items are paid from the Daily check-off screen (once per student per day). <b>Anytime</b> items are buttons on the Dashboard. Type a <b>negative</b> amount (e.g. −8) to make an item a charge — a daily charge starts unchecked, and you check whoever it applies to.
         </p>
 
         <h2>Store</h2>
