@@ -1,6 +1,6 @@
 /**
- * Big items: who's on each list (paid), who's saving toward it, and clearing
- * the list after the event. Refunds are done with undo in a student's History.
+ * Buy-in lists, shown at the bottom of Store & earning: who's on each list
+ * (paid), who's saving toward it, and clearing the list after the event. Refunds are done with undo in a student's History.
  */
 import { useData, banked } from '../../lib/data'
 import { removeFromList, clearList } from '../../lib/actions'
@@ -12,12 +12,11 @@ export default function BuyIns() {
   const items = data.items.filter(i => i.tier === 'saver')
 
   if (!items.length) return (
-    <div className="section slate">No buy-in items yet. In <b>Store & earning</b>, set an item's section to <b>Buy-in</b>.</div>
+    <p className="slate" style={{ fontSize: 14 }}>No buy-in items yet. Set a store item's section to <b>Buy-in</b> above.</p>
   )
 
   return (
-    <div className="scroll" style={{ flex: 1 }}>
-      <div className="section" style={{ maxWidth: 1100 }}>
+      <div>
         <p className="slate" style={{ fontSize: 14, marginBottom: 16 }}>
           Students bank credits toward these (locked), then buy in and land on the list. Take students off a list once they've used it,
           or clear the whole list after the event. To refund someone, undo the entry in their History on the Students tab.
@@ -76,6 +75,5 @@ export default function BuyIns() {
           })}
         </div>
       </div>
-    </div>
   )
 }

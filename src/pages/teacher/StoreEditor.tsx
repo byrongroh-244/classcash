@@ -1,5 +1,5 @@
 /**
- * Edit earning amounts and store items (everyday and buy-in). Changes save as soon as
+ * Edit earning amounts and store items, and manage buy-in lists (bottom). Changes save as soon as
  * you leave a field.
  */
 import { useState } from 'react'
@@ -7,6 +7,7 @@ import { useData } from '../../lib/data'
 import { saveRow, deleteRow, moveRow } from '../../lib/actions'
 import type { EarnRule, StoreItem } from '../../lib/types'
 import { Icon, Overlay, PICKABLE_ICONS, useRowDrag, DragGrip } from '../../components/ui'
+import BuyIns from './BuyIns'
 
 /** Tap the icon to choose a different one from the library. */
 function IconPick({ value, onPick }: { value: string; onPick: (v: string) => void }) {
@@ -120,9 +121,11 @@ export default function StoreEditor() {
           </div>
         </div>
         <p className="slate" style={{ fontSize: 13, margin: '-18px 0 28px' }}>
-          <b>Daily check-off</b> items (like a preferred seat) aren't in the student store — they show up as a red column in your Daily check-off, and you check whoever to charge. <b>Buy-in</b> items are the big ones: students bank toward them (locked), then buy and go on the list (Teacher → Buy-ins). Limit and hall timer don't apply to them. Leave <b>Limit</b> blank for unlimited. A <b>Hall timer</b> makes the item a hall pass: it starts a countdown and counts toward the "max in hall" setting.
+          <b>Daily check-off</b> items (like a preferred seat) aren't in the student store — they show up as a red column in your Daily check-off, and you check whoever to charge. <b>Buy-in</b> items are the big ones: students bank toward them (locked), then buy and go on the list (see Buy-in lists below). Limit and hall timer don't apply to them. Leave <b>Limit</b> blank for unlimited. A <b>Hall timer</b> makes the item a hall pass: it starts a countdown and counts toward the "max in hall" setting.
         </p>
 
+        <h2 id="buyin-lists">Buy-in lists</h2>
+        <div style={{ marginBottom: 40 }}><BuyIns /></div>
       </div>
     </div>
   )

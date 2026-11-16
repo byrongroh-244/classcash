@@ -6,14 +6,12 @@ import Dashboard from './teacher/Dashboard'
 import Daily from './teacher/Daily'
 import Students from './teacher/Students'
 import StoreEditor from './teacher/StoreEditor'
-import BuyIns from './teacher/BuyIns'
 import SettingsPage from './teacher/SettingsPage'
 
 const TABS = [
   ['dash', 'Dashboard'],
   ['daily', 'Daily check-off'],
   ['students', 'Students'],
-  ['buyins', 'Buy-ins'],
   ['store', 'Store & earning'],
   ['settings', 'Settings'],
 ] as const
@@ -48,7 +46,6 @@ export default function Teacher({ onLock }: { onLock: () => void }) {
       {tab === 'dash' && <Dashboard />}
       {tab === 'daily' && <Daily />}
       {tab === 'students' && <Students />}
-      {tab === 'buyins' && <BuyIns />}
       {tab === 'store' && <StoreEditor />}
       {tab === 'settings' && <SettingsPage />}
     </div>
