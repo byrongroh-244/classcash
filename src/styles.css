@@ -350,3 +350,10 @@ button:disabled { cursor: default; }
 .done-screen { align-items: center; justify-content: center; background: var(--green); color: #fff; text-align: center; gap: 14px; }
 .done-btn { min-width: 200px; background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.5); color: #fff; }
 .done-btn.primary { background: #fff; border-color: #fff; color: var(--green-ink); }
+
+.grip {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 40px;
+  cursor: grab; touch-action: none; border-radius: 6px; opacity: .45;
+}
+.grip:active, tr.dragging .grip { opacity: 1; cursor: grabbing; background: var(--cloud); }
+tr.dragging td { background: var(--white); }

@@ -16,7 +16,7 @@ export const PICKABLE_ICONS = [
   'pizza', 'ice-cream', 'coffee', 'bus', 'ticket', 'gift', 'paint-brush', 'puzzle-piece',
   'backpack', 'coins', 'piggy-bank', 'hand-coins',
 ]
-const UI_ICONS = ['lock-simple', 'shopping-cart-simple', 'backspace', 'check', 'arrow-counter-clockwise', 'x', 'plus', 'minus', 'sign-out', 'warning']
+const UI_ICONS = ['lock-simple', 'shopping-cart-simple', 'backspace', 'check', 'arrow-counter-clockwise', 'x', 'plus', 'minus', 'sign-out', 'warning', 'dots-six-vertical', 'sort-ascending']
 const KNOWN = new Set([...PICKABLE_ICONS, ...UI_ICONS])
 
 export function Icon({ name, size = 22, light, style, className = '' }: {
@@ -130,4 +130,82 @@ export function Toast({ children, onDone, ms = 6000 }: { children: React.ReactNo
   done.current = onDone
   useEffect(() => { const id = setTimeout(() => done.current(), ms); return () => clearTimeout(id) }, [ms])
   return <div className="toast">{children}</div>
+}
+
+/**
+ * Press-and-drag reordering for table rows (works with touch on the iPad).
+ *   const drag = useRowDrag((from, to) => moveRow(...))
+ *   <tr {...drag.row(i)}> … <DragGrip onPointerDown={drag.grip(i)} /> … </tr>
+ * While dragging, the row follows the finger and the others slide out of the way.
+ */
+export function useRowDrag(onDrop: (from: number, to: number) => void) {
+  const rows = useRef<(HTMLElement | null)[]>([])
+  const [drag, setDrag] = useState<{ from: number; to: number; dy: number; h: number } | null>(null)
+  const drop = useRef(onDrop)
+  drop.current = onDrop
+
+  const grip = (index: number) => (e: React.PointerEvent) => {
+    e.preventDefault()
+    const el = rows.current[index]
+    const box = (el?.closest('.scroll') as HTMLElement | null) || document.documentElement
+    const scroll0 = box.scrollTop
+    // Row positions in the list's own coordinates, so scrolling mid-drag doesn't throw them off.
+    const spans = rows.current.map(r => { const b = r?.getBoundingClientRect(); return b ? { top: b.top + scroll0, h: b.height } : null })
+    const h = spans[index]?.h || 0
+    const startY = e.clientY + scroll0
+    let lastY = e.clientY, to = index, raf = 0
+    const update = () => {
+      const y = lastY + box.scrollTop
+      to = index
+      spans.forEach((r, i) => {
+        if (!r) return
+        const mid = r.top + r.h / 2
+        if (i < index && y < mid) to = Math.min(to, i)
+        if (i > index && y > mid) to = Math.max(to, i)
+      })
+      setDrag({ from: index, to, dy: y - startY, h })
+    }
+    // Scroll the list when the finger is near its top or bottom edge.
+    const tick = () => {
+      const b = box.getBoundingClientRect()
+      const top = Math.max(b.top, 0), bottom = Math.min(b.bottom, window.innerHeight)
+      const step = lastY < top + 70 ? -10 : lastY > bottom - 70 ? 10 : 0
+      if (step) { box.scrollTop += step; update() }
+      raf = requestAnimationFrame(tick)
+    }
+    const move = (ev: PointerEvent) => { lastY = ev.clientY; update() }
+    const up = () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+      setDrag(null)
+      if (to !== index) drop.current(index, to)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    raf = requestAnimationFrame(tick)
+    setDrag({ from: index, to: index, dy: 0, h })
+  }
+
+  const row = (i: number) => {
+    let style: React.CSSProperties | undefined
+    if (drag) {
+      if (i === drag.from) style = { transform: `translateY(${drag.dy}px)`, position: 'relative', zIndex: 5, background: 'var(--white)', boxShadow: '0 8px 24px rgba(15,23,42,.18)' }
+      else if (drag.from < drag.to && i > drag.from && i <= drag.to) style = { transform: `translateY(${-drag.h}px)`, transition: 'transform .15s' }
+      else if (drag.from > drag.to && i >= drag.to && i < drag.from) style = { transform: `translateY(${drag.h}px)`, transition: 'transform .15s' }
+      else style = { transition: 'transform .15s' }
+    }
+    return { ref: (el: HTMLElement | null) => { rows.current[i] = el }, style, className: drag?.from === i ? 'dragging' : undefined }
+  }
+  return { grip, row, active: !!drag }
+}
+
+export function DragGrip({ onPointerDown }: { onPointerDown: (e: React.PointerEvent) => void }) {
+  return (
+    <span className="grip" title="Drag to reorder" onPointerDown={onPointerDown}>
+      <Icon name="dots-six-vertical" size={18} />
+    </span>
+  )
 }

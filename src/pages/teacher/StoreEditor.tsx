@@ -4,9 +4,9 @@
  */
 import { useState } from 'react'
 import { useData } from '../../lib/data'
-import { saveRow, deleteRow } from '../../lib/actions'
+import { saveRow, deleteRow, moveRow } from '../../lib/actions'
 import type { EarnRule, StoreItem } from '../../lib/types'
-import { Icon, Overlay, PICKABLE_ICONS } from '../../components/ui'
+import { Icon, Overlay, PICKABLE_ICONS, useRowDrag, DragGrip } from '../../components/ui'
 
 /** Tap the icon to choose a different one from the library. */
 function IconPick({ value, onPick }: { value: string; onPick: (v: string) => void }) {
@@ -58,17 +58,20 @@ const nextOrder = (list: { order: number }[]) => Math.max(0, ...list.map(x => x.
 
 export default function StoreEditor() {
   const data = useData()
+  const ruleDrag = useRowDrag((from, to) => moveRow('rules', data.rules.map(x => x.id), from, to))
+  const itemDrag = useRowDrag((from, to) => moveRow('items', data.items.map(x => x.id), from, to))
   return (
     <div className="scroll" style={{ flex: 1 }}>
-      <div className="section" style={{ maxWidth: 1000 }}>
+      <div className="section" style={{ maxWidth: 1180 }}>
         <h2>Ways to earn</h2>
         <div className="card" style={{ marginBottom: 28 }}>
           <table className="cfg-table">
-            <thead><tr><th style={{ paddingLeft: 14 }}>Icon</th><th>Name</th><th>Credits</th><th>Type</th><th>Whole-class button</th><th /></tr></thead>
+            <thead><tr><th style={{ width: 34 }} /><th>Icon</th><th>Name</th><th>Credits</th><th>Type</th><th>Whole-class button</th><th /></tr></thead>
             <tbody>
-              {data.rules.map((r: EarnRule) => (
-                <tr key={r.id}>
-                  <td style={{ paddingLeft: 14 }}><IconPick value={r.icon} onPick={v => saveRow('rules', r.id, { icon: v })} /></td>
+              {data.rules.map((r: EarnRule, idx) => (
+                <tr key={r.id} {...ruleDrag.row(idx)}>
+                  <td style={{ paddingLeft: 6 }}><DragGrip onPointerDown={ruleDrag.grip(idx)} /></td>
+                  <td><IconPick value={r.icon} onPick={v => saveRow('rules', r.id, { icon: v })} /></td>
                   <td><Text value={r.label} w={220} onSave={v => saveRow('rules', r.id, { label: v })} /></td>
                   <td><Text value={r.amount} w={60} num signed onSave={v => saveRow('rules', r.id, { amount: Number(v) || 0 })} /></td>
                   <td><Seg value={r.kind} options={[['daily', 'Daily'], ['incident', 'Anytime']]} onChange={v => saveRow('rules', r.id, { kind: v })} /></td>
@@ -89,11 +92,12 @@ export default function StoreEditor() {
         <h2>Store</h2>
         <div className="card" style={{ marginBottom: 28 }}>
           <table className="cfg-table">
-            <thead><tr><th style={{ paddingLeft: 14 }}>Icon</th><th>Name</th><th>Price</th><th>Section</th><th>Limit</th><th>Hall timer</th><th>On</th><th /></tr></thead>
+            <thead><tr><th style={{ width: 34 }} /><th>Icon</th><th>Name</th><th>Price</th><th>Section</th><th>Limit</th><th>Hall timer</th><th>On</th><th /></tr></thead>
             <tbody>
-              {data.items.map((i: StoreItem) => (
-                <tr key={i.id}>
-                  <td style={{ paddingLeft: 14 }}><IconPick value={i.icon} onPick={v => saveRow('items', i.id, { icon: v })} /></td>
+              {data.items.map((i: StoreItem, idx) => (
+                <tr key={i.id} {...itemDrag.row(idx)}>
+                  <td style={{ paddingLeft: 6 }}><DragGrip onPointerDown={itemDrag.grip(idx)} /></td>
+                  <td><IconPick value={i.icon} onPick={v => saveRow('items', i.id, { icon: v })} /></td>
                   <td><Text value={i.label} w={190} onSave={v => saveRow('items', i.id, { label: v })} /></td>
                   <td><Text value={i.price} w={60} num onSave={v => saveRow('items', i.id, { price: Number(v) || 0 })} /></td>
                   <td><Seg value={i.tier} options={[['everyday', 'Everyday'], ['saver', 'Buy-in'], ['daily', 'Daily check-off']]} onChange={v => saveRow('items', i.id, { tier: v })} /></td>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useData } from '../../lib/data'
-import { addStudents, updateStudent, undoTx, award } from '../../lib/actions'
-import { Amt, Overlay, Icon, PinPad } from '../../components/ui'
+import { addStudents, updateStudent, undoTx, award, moveRow, sortStudentsAZ } from '../../lib/actions'
+import { Amt, Overlay, Icon, PinPad, useRowDrag, DragGrip } from '../../components/ui'
 import { useHistory, HistoryList } from '../StudentAccount'
 import type { Student } from '../../lib/types'
 
@@ -14,6 +14,7 @@ export default function Students() {
 
   const removed = data.allStudents.filter(s => s.active === false)
   const total = data.students.reduce((n, s) => n + s.balance, 0)
+  const drag = useRowDrag((from, to) => moveRow('students', data.students.map(x => x.id), from, to))
 
   return (
     <div className="scroll" style={{ flex: 1 }}>
@@ -21,6 +22,12 @@ export default function Students() {
         <div className="row" style={{ marginBottom: 12 }}>
           <h2 className="grow" style={{ margin: 0 }}>Students ({data.students.length})</h2>
           <span className="slate" style={{ fontSize: 13 }}>In circulation: <Amt n={total} /></span>
+          {data.students.some(s => s.order !== undefined) && (
+            <button className="btn sm" title="Put students back in alphabetical order"
+              onClick={() => { if (confirm('Put students back in A to Z order?')) sortStudentsAZ(data.allStudents.map(s => s.id)) }}>
+              <Icon name="sort-ascending" size={16} /> A to Z
+            </button>
+          )}
           <button className="btn dark" onClick={() => setAdding(a => !a)}>+ Add students</button>
         </div>
 
@@ -31,7 +38,7 @@ export default function Students() {
               <textarea className="input" rows={6} value={text} onChange={e => setText(e.target.value)} placeholder={'Ava\nBen\nCarlos'} />
             </div>
             <div className="row">
-              <span className="muted grow" style={{ fontSize: 13 }}>Students create their own 4-digit passcode the first time they sign in.</span>
+              <span className="muted grow" style={{ fontSize: 13 }}>Students create their own 4-digit passcode the first time they sign in. New students go to the bottom of the list.</span>
               <button className="btn" onClick={() => { setAdding(false); setText('') }}>Cancel</button>
               <button className="btn green" disabled={!text.trim()} onClick={async () => {
                 await addStudents(text.split(/[\n,]/)); setText(''); setAdding(false)
@@ -42,11 +49,12 @@ export default function Students() {
 
         <div className="card">
           <table className="cfg-table">
-            <thead><tr><th style={{ paddingLeft: 16 }}>Name</th><th>Balance</th><th>Earned (all time)</th><th>Passcode</th><th /></tr></thead>
+            <thead><tr><th style={{ width: 34 }} /><th>Name</th><th>Balance</th><th>Earned (all time)</th><th>Passcode</th><th /></tr></thead>
             <tbody>
-              {data.students.map(s => (
-                <tr key={s.id}>
-                  <td style={{ paddingLeft: 16 }}><NameEdit s={s} /></td>
+              {data.students.map((s, idx) => (
+                <tr key={s.id} {...drag.row(idx)}>
+                  <td style={{ paddingLeft: 6 }}><DragGrip onPointerDown={drag.grip(idx)} /></td>
+                  <td><NameEdit s={s} /></td>
                   <td><BalanceAdjust s={s} /></td>
                   <td className="mono slate">{s.earned}</td>
                   <td><PasscodeCell s={s} /></td>

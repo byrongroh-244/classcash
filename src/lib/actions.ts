@@ -301,3 +301,23 @@ export async function saveRow(coll: Coll, id: string | null, fields: Record<stri
 export async function deleteRow(coll: Coll, id: string) {
   await db.update({ [`${coll}/${id}`]: null })
 }
+
+// ─── Reordering ──────────────────────────────────────────────────────────────
+
+/** Move one row of a list to a new position and renumber the whole list (0, 1, 2…). */
+export async function moveRow(coll: 'rules' | 'items' | 'students', ids: string[], from: number, to: number) {
+  if (from === to || to < 0 || to >= ids.length) return
+  const next = [...ids]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  const u: Record<string, unknown> = {}
+  next.forEach((id, i) => { u[`${coll}/${id}/order`] = i })
+  await db.update(u)
+}
+
+/** Back to alphabetical student order. */
+export async function sortStudentsAZ(ids: string[]) {
+  const u: Record<string, unknown> = {}
+  ids.forEach(id => { u[`students/${id}/order`] = null })
+  await db.update(u)
+}

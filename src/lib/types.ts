@@ -37,6 +37,8 @@ export interface Student {
   earned: number
   active: boolean
   createdAt: number
+  /** Position in lists, set when the teacher reorders students (unset = A→Z). */
+  order?: number
 }
 
 export interface EarnRule {

@@ -105,7 +105,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const base = useMemo(() => {
     const allStudents = toList<Student>(studentsRaw)
       .map(s => ({ ...s, balance: s.balance || 0, earned: s.earned || 0 }))
-      .sort((a, b) => a.name.localeCompare(b.name))
+      // Teacher's custom order first; anyone without one (e.g. just added) goes after, A→Z.
+      .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || a.name.localeCompare(b.name))
     const weekTx = toList<Tx>(weekRaw).sort((a, b) => b.ts - a.ts)
     const { _saved, ...daily } = dailyRaw || {}
     return {
