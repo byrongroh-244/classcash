@@ -15,6 +15,10 @@ export interface Settings {
   cheerKiosk: boolean
   /** Closed = the front iPad shows the leaderboard and nothing can be bought. */
   storeOpen: boolean
+  /** Optional 4-digit code that opens any student's account at their passcode prompt ('' = off). */
+  masterPin: string
+  /** When balances were last reset — the weekly leaderboard only counts what's earned after it. */
+  resetAt?: number
   /** Automatic fine when a student checks back in from a hall pass after too long. */
   hallFineOn: boolean
   /** Minutes out (counted from when the pass started) before the fine applies. */

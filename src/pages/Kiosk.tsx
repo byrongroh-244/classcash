@@ -79,6 +79,11 @@ export default function Kiosk() {
     if (storeOpen) setLoggedIn(id)
   }
 
+  // Master PIN (Settings): opens any student's account straight away — no hall check-in,
+  // and a student who hasn't made a passcode yet still gets to make their own later.
+  const isMaster = (code: string) => !!data.settings.masterPin && code === data.settings.masterPin
+  const openAsTeacher = (id: string) => { setLoggedIn(id) }
+
   const studentPins = <>
         {picked && stage === 'code' && (
           <PinPad
@@ -87,6 +92,7 @@ export default function Kiosk() {
             onCancel={close}
             onComplete={code => {
               const cur = data.students.find(s => s.id === picked.id)
+              if (isMaster(code)) { openAsTeacher(picked.id); close(); return true }
               if (code !== cur?.passcode) return false
               afterAuth(picked.id); close(); return true
             }}
@@ -97,7 +103,10 @@ export default function Kiosk() {
             title={`Welcome, ${picked.name}!`}
             subtitle={<>Create a 4-digit passcode.<br />Don't share it with anyone.</>}
             onCancel={close}
-            onComplete={code => { setNewCode(code); setStage('new2'); return true }}
+            onComplete={code => {
+              if (isMaster(code)) { openAsTeacher(picked.id); close(); return true }
+              setNewCode(code); setStage('new2'); return true
+            }}
           />
         )}
         {picked && stage === 'new2' && (

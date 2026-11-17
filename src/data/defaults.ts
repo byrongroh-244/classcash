@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cheerBoard: true,
   cheerKiosk: true,
   storeOpen: true,
+  masterPin: '',
   hallFineOn: false,
   hallFineAfterMin: 10,
   hallFineAmount: 5,

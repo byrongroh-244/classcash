@@ -172,6 +172,26 @@ function demoDB(): DB {
 
 export const db: DB = import.meta.env.VITE_FIREBASE_DATABASE_URL ? firebaseDB() : demoDB()
 
+/**
+ * Keep always-on screens (the class iPad, the projector) live.
+ * iPads can freeze a page while asleep and come back showing old numbers, so:
+ *  - after the screen has been hidden/asleep for 2+ minutes, reload when it wakes;
+ *  - if the database connection stays down for 60 seconds, reload.
+ * Nothing is lost by reloading: all data lives in the database.
+ */
+if (!db.demo) {
+  let hiddenAt = 0
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) hiddenAt = Date.now()
+    else if (hiddenAt && Date.now() - hiddenAt > 2 * 60000) location.reload()
+  })
+  let downSince = 0
+  db.listen('.info/connected', (up: boolean) => { downSince = up ? 0 : (downSince || Date.now()) })
+  setInterval(() => {
+    if (downSince && Date.now() - downSince > 60000 && navigator.onLine) location.reload()
+  }, 15000)
+}
+
 /** Wipe the demo database (demo mode only). */
 export function resetDemo() {
   try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }

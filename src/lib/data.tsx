@@ -154,7 +154,10 @@ export function leaderboard(data: Data, range: 'week' | 'all') {
     name: s.name,
     score: range === 'all'
       ? s.earned
-      : data.weekTx.filter(t => t.studentId === s.id).reduce((sum, t) => sum + (t.earnDelta || 0), 0),
+      // This week: only what was earned after the last balance reset (the reset entry itself doesn't count).
+      : data.weekTx
+        .filter(t => t.studentId === s.id && t.kind !== 'reset' && t.ts > (data.settings.resetAt || 0))
+        .reduce((sum, t) => sum + (t.earnDelta || 0), 0),
   }))
   return rows.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
 }

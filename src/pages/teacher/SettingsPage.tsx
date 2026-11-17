@@ -8,6 +8,8 @@ export default function SettingsPage() {
   const data = useData()
   const s = data.settings
   const [changingPin, setChangingPin] = useState<'new' | 'confirm' | null>(null)
+  const [changingMaster, setChangingMaster] = useState<'new' | 'confirm' | null>(null)
+  const [newMaster, setNewMaster] = useState('')
   const [newPin, setNewPin] = useState('')
   const [resetting, setResetting] = useState(false)
   const [msg, setMsg] = useState('')
@@ -67,6 +69,16 @@ export default function SettingsPage() {
           <button className="btn dark" onClick={() => setChangingPin('new')}>Change PIN</button>
         </div>
 
+        <h2>Master student PIN</h2>
+        <div className="card row" style={{ padding: 18, marginBottom: 24 }}>
+          <span className="grow slate" style={{ fontSize: 14 }}>
+            Type it at any student's passcode prompt to open their account (for example, to buy something for them).
+            {' '}{s.masterPin ? <b>On.</b> : <b>Off.</b>} Keep it different from your teacher PIN.
+          </span>
+          {s.masterPin && <button className="btn" onClick={() => { if (confirm('Turn off the master student PIN?')) saveSettings({ masterPin: '' }) }}>Turn off</button>}
+          <button className="btn dark" onClick={() => setChangingMaster('new')}>{s.masterPin ? 'Change' : 'Set master PIN'}</button>
+        </div>
+
         <h2>Front-of-room board</h2>
         <div className="card" style={{ padding: 18, marginBottom: 24 }}>
           <p className="slate" style={{ fontSize: 14, marginBottom: 10 }}>
@@ -80,7 +92,7 @@ export default function SettingsPage() {
 
         <h2>New semester</h2>
         <div className="card row" style={{ padding: 18, marginBottom: 40 }}>
-          <span className="grow slate" style={{ fontSize: 14 }}>Sets every balance and leaderboard total to 0. Transaction history is kept.</span>
+          <span className="grow slate" style={{ fontSize: 14 }}>Sets every balance and leaderboard total to 0 (the weekly board starts fresh too). Transaction history is kept.</span>
           <button className="btn red" onClick={() => setResetting(true)}>Reset balances…</button>
         </div>
       </div>
@@ -91,6 +103,13 @@ export default function SettingsPage() {
         onComplete={async c => {
           if (c !== newPin) return false
           await saveSettings({ pin: c }); setChangingPin(null); setMsg('PIN changed'); return true
+        }} />}
+      {changingMaster === 'new' && <PinPad title="New master student PIN" subtitle="Opens any student's account" onCancel={() => setChangingMaster(null)}
+        onComplete={c => { setNewMaster(c); setChangingMaster('confirm'); return true }} />}
+      {changingMaster === 'confirm' && <PinPad key="mc" title="Type it again" onCancel={() => setChangingMaster(null)}
+        onComplete={async c => {
+          if (c !== newMaster) return false
+          await saveSettings({ masterPin: c }); setChangingMaster(null); setMsg('Master student PIN set'); return true
         }} />}
       {resetting && <PinPad title="Enter PIN to reset" subtitle="This zeroes all balances and banked credits. Buy-in lists are kept." onCancel={() => setResetting(false)}
         onComplete={async c => {

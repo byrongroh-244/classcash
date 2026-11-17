@@ -303,6 +303,8 @@ export async function resetSemester(data: Data) {
   }
   // Locked bank credits are cleared too (buy-in lists are kept — those students paid).
   u['banks'] = null
+  // The weekly leaderboard starts fresh from here.
+  u['settings/resetAt'] = Date.now()
   await db.update(u)
 }
 
