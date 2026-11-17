@@ -117,8 +117,15 @@ export default function Kiosk() {
 
   const welcomeScreen = welcome && <WelcomeBack {...welcome} onDone={() => setWelcome(null)} />
 
+  // One tap on their name button = checked back in from the hall (no passcode).
+  const quickCheckIn = async (id: string) => {
+    const name = data.allStudents.find(s => s.id === id)?.name || ''
+    const res = await checkIn(data, id)
+    if (res) setWelcome({ name, ...res })
+  }
+
   if (!storeOpen || view === 'board') return <>
-    <Board onTeacher={() => setPinFor('teacher')} onCheckIn={tap}
+    <Board onTeacher={() => setPinFor('teacher')} onCheckIn={quickCheckIn}
       onOpenStore={storeOpen ? undefined : () => setPinFor('open')}
       onShowStore={storeOpen ? () => setView('store') : undefined} />
     {teacherPin}
@@ -163,7 +170,7 @@ export default function Kiosk() {
             <span className="muted" style={{ fontSize: 12 }}>{data.students.length} students</span>
           </div>
         </div>
-        <SidePanel />
+        <SidePanel onCheckIn={quickCheckIn} />
       </div>
       {data.settings.cheerKiosk && !picked && !pinFor && <Celebrations size="kiosk" />}
 
@@ -176,7 +183,7 @@ export default function Kiosk() {
 }
 
 /** Dark right-hand panel: who's in the hall, this week's top 5, today's shout-outs. */
-export function SidePanel() {
+export function SidePanel({ onCheckIn }: { onCheckIn?: (studentId: string) => void } = {}) {
   const data = useData()
   const top = leaderboard(data, 'week').filter(r => r.score > 0).slice(0, 5)
   const cheers = cheersToday(data).slice(0, 8)
@@ -184,13 +191,17 @@ export function SidePanel() {
     <aside className="side">
       {data.hall.length > 0 && (
         <div>
-          <div className="label" style={{ marginBottom: 8 }}>In the hall · sign in when you're back</div>
-          {data.hall.map(h => (
-            <div key={h.studentId} className={`hall-chip ${passStatus(h, data.now).over ? 'over' : ''}`}>
-              <Icon name="person-simple-walk" size={18} light /><span className="grow">{h.name}</span>
-              <span className="mono">{passStatus(h, data.now).text}</span>
-            </div>
-          ))}
+          <div className="label" style={{ marginBottom: 8 }}>In the hall</div>
+          {data.hall.map(h => {
+            const st = passStatus(h, data.now)
+            return (
+              <button key={h.studentId} className={`checkin-btn side-checkin ${st.over ? 'over' : ''}`} onClick={() => onCheckIn?.(h.studentId)}>
+                <Icon name="person-simple-walk" size={20} light />
+                <span className="grow" style={{ textAlign: 'left' }}><b>{h.name}</b><br /><small>tap when you're back</small></span>
+                <span className="mono">{st.text}</span>
+              </button>
+            )
+          })}
         </div>
       )}
       <div>

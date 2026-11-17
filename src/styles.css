@@ -374,11 +374,22 @@ tr.dragging td { background: var(--white); }
 .board { padding-top: calc(3vh + var(--status-bar)); }
 .done-screen { padding-top: var(--status-bar); }
 
-/* ── Hall check-in ── */
+/* ── Hall check-in: one big tap-when-you're-back button per student ── */
 .hall-chip.over { background: var(--red); color: #fff; }
-.checkin-bar {
-  display: flex; align-items: center; gap: 1vw; flex-wrap: wrap; background: #1e293b; border: 1px solid #334155;
-  border-radius: 1.6vh; padding: 1.4vh 1.4vw; font-size: 2.4vh; color: #e2e8f0;
+.checkin-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.checkin-btn {
+  display: inline-flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 14px;
+  background: var(--green); color: #fff; font-size: 18px; box-shadow: 0 4px 14px rgba(16,185,129,.35);
 }
-.checkin-btn { background: var(--green); border-color: var(--green); color: #fff; font-size: 2.4vh; }
+.checkin-btn.over { background: var(--red); box-shadow: 0 4px 14px rgba(239,68,68,.4); }
+.checkin-btn:active { transform: scale(.97); }
+.side-checkin { width: 100%; font-size: 15px; padding: 10px 12px; margin-bottom: 6px; }
+.side-checkin small { font-size: 12px; opacity: .9; }
+
+/* ── Leaderboard: boxes clip their lists; light, readable bottom buttons ── */
+.board-cols { min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.board-panel { overflow: hidden; min-height: 0; }
+.board-foot { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.board-btn { background: #f8fafc; border-color: #f8fafc; color: var(--ink); font-size: 16px; padding: 10px 16px; }
+.board-btn:active { background: #e2e8f0; }
 .done-screen.late { background: var(--red); }

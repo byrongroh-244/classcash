@@ -7,12 +7,11 @@
 import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { passStatus } from '../lib/dates'
-import type { Student } from '../lib/types'
 import { Icon } from '../components/ui'
 import { Celebrations, CheerFeed } from '../components/Celebrate'
 
 export default function Board({ onTeacher, onOpenStore, onShowStore, onCheckIn }: {
-  onTeacher?: () => void; onOpenStore?: () => void; onShowStore?: () => void; onCheckIn?: (s: Student) => void
+  onTeacher?: () => void; onOpenStore?: () => void; onShowStore?: () => void; onCheckIn?: (studentId: string) => void
 } = {}) {
   const data = useData()
   const [clock, setClock] = useState('')
@@ -75,25 +74,23 @@ export default function Board({ onTeacher, onOpenStore, onShowStore, onCheckIn }
           })}
         </div>
       )}
-      {onCheckIn && data.hall.length > 0 && (
-        <div className="checkin-bar">
-          <span>Back from the hall? Tap your name to sign back in:</span>
-          {data.hall.map(h => {
-            const st = data.students.find(x => x.id === h.studentId)
-            return st ? <button key={h.studentId} className="btn lg checkin-btn" onClick={() => onCheckIn(st)}>{h.name}</button> : null
-          })}
-        </div>
-      )}
-      {onTeacher && (
-        <div className="row" style={{ marginTop: '-1vh' }}>
-          <button className="btn sm ghost" style={{ color: '#64748b' }} onClick={onTeacher}><Icon name="lock-simple" size={16} light style={{ opacity: .5 }} /> Teacher</button>
-          <span className="grow" />
-          {onShowStore && (
-            <button className="btn open-store-btn" onClick={onShowStore}><Icon name="storefront" size={18} light /> Store</button>
-          )}
-          {onOpenStore && (
-            <button className="btn open-store-btn" onClick={onOpenStore}><Icon name="storefront" size={18} light /> Open store</button>
-          )}
+      {(onTeacher || onShowStore || onOpenStore || (onCheckIn && data.hall.length > 0)) && (
+        <div className="board-foot">
+          {onTeacher && <button className="btn board-btn" onClick={onTeacher}><Icon name="lock-simple" size={18} /> Teacher</button>}
+          <div className="grow checkin-row">
+            {onCheckIn && data.hall.map(h => {
+              const st = passStatus(h, data.now)
+              return (
+                <button key={h.studentId} className={`checkin-btn ${st.over ? 'over' : ''}`} onClick={() => onCheckIn(h.studentId)}>
+                  <Icon name="person-simple-walk" size={22} light />
+                  <span><b>{h.name}</b> · tap when you're back</span>
+                  <span className="mono">{st.text}</span>
+                </button>
+              )
+            })}
+          </div>
+          {onShowStore && <button className="btn board-btn" onClick={onShowStore}><Icon name="storefront" size={18} /> Store</button>}
+          {onOpenStore && <button className="btn board-btn" onClick={onOpenStore}><Icon name="storefront" size={18} /> Open store</button>}
         </div>
       )}
       {data.settings.cheerBoard && <Celebrations />}
