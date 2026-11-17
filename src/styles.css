@@ -393,3 +393,26 @@ tr.dragging td { background: var(--white); }
 .board-btn { background: #f8fafc; border-color: #f8fafc; color: var(--ink); font-size: 16px; padding: 10px 16px; }
 .board-btn:active { background: #e2e8f0; }
 .done-screen.late { background: var(--red); }
+
+/* ── Slide to check in ── */
+.slider {
+  position: relative; height: 52px; border-radius: 26px; background: #1e293b; border: 1px solid #334155;
+  overflow: hidden; user-select: none; -webkit-user-select: none; flex-shrink: 0;
+}
+.slider-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 26px; background: rgba(16,185,129,.35); }
+.slider.over .slider-fill { background: rgba(239,68,68,.35); }
+.slider-text {
+  position: absolute; inset: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 60px;
+  color: #e2e8f0; font-size: 14px; pointer-events: none; white-space: nowrap;
+}
+.slider-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.slider-detail { font-size: 13px; color: #94a3b8; }
+.slider.over .slider-detail { color: #fca5a5; }
+.slider-knob {
+  position: absolute; left: 4px; top: 3px; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--green); display: flex; align-items: center; justify-content: center;
+  touch-action: none; cursor: grab; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.slider-knob .ic { filter: brightness(0) invert(1); }
+.slider.over .slider-knob { background: var(--red); }
+.slider.done .slider-fill { background: rgba(16,185,129,.6); }

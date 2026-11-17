@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { updateStudent, saveSettings, checkIn } from '../lib/actions'
 import { passStatus } from '../lib/dates'
-import { DemoBanner, PinPad, Icon, Toast } from '../components/ui'
+import { DemoBanner, PinPad, Icon, Toast, SlideToConfirm } from '../components/ui'
 import StudentAccount from './StudentAccount'
 import { Celebrations, cheersToday } from '../components/Celebrate'
 import Board from './Board'
@@ -204,11 +204,11 @@ export function SidePanel({ onCheckIn }: { onCheckIn?: (studentId: string) => vo
           {data.hall.map(h => {
             const st = passStatus(h, data.now)
             return (
-              <button key={h.studentId} className={`checkin-btn side-checkin ${st.over ? 'over' : ''}`} onClick={() => onCheckIn?.(h.studentId)}>
-                <Icon name="person-simple-walk" size={20} light />
-                <span className="grow" style={{ textAlign: 'left' }}><b>{h.name}</b><br /><small>tap when you're back</small></span>
-                <span className="mono">{st.text}</span>
-              </button>
+              <div key={h.studentId} style={{ marginBottom: 8 }}>
+                <SlideToConfirm over={st.over}
+                  label={<><b>{h.name}</b> · slide when back</>} detail={st.text}
+                  onConfirm={() => onCheckIn?.(h.studentId)} />
+              </div>
             )
           })}
         </div>

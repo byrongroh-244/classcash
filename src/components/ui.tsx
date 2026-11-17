@@ -16,7 +16,7 @@ export const PICKABLE_ICONS = [
   'pizza', 'ice-cream', 'coffee', 'bus', 'ticket', 'gift', 'paint-brush', 'puzzle-piece',
   'backpack', 'coins', 'piggy-bank', 'hand-coins',
 ]
-const UI_ICONS = ['lock-simple', 'shopping-cart-simple', 'backspace', 'check', 'arrow-counter-clockwise', 'x', 'plus', 'minus', 'sign-out', 'warning', 'dots-six-vertical', 'sort-ascending']
+const UI_ICONS = ['lock-simple', 'shopping-cart-simple', 'backspace', 'check', 'arrow-counter-clockwise', 'x', 'plus', 'minus', 'sign-out', 'warning', 'dots-six-vertical', 'sort-ascending', 'arrow-right']
 const KNOWN = new Set([...PICKABLE_ICONS, ...UI_ICONS])
 
 export function Icon({ name, size = 22, light, style, className = '' }: {
@@ -207,5 +207,57 @@ export function DragGrip({ onPointerDown }: { onPointerDown: (e: React.PointerEv
     <span className="grip" title="Drag to reorder" onPointerDown={onPointerDown}>
       <Icon name="dots-six-vertical" size={18} />
     </span>
+  )
+}
+
+/**
+ * Slide-to-confirm pill (used for "back from the hall"): drag the knob to the
+ * right end. Let go early and it springs back, so a stray tap does nothing.
+ */
+export function SlideToConfirm({ label, detail, over, onConfirm, width }: {
+  label: React.ReactNode; detail?: React.ReactNode; over?: boolean; onConfirm: () => void; width?: number
+}) {
+  const KNOB = 44, PAD = 4
+  const box = useRef<HTMLDivElement>(null)
+  const [max, setMax] = useState(200)
+  const [x, setX] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const [done, setDone] = useState(false)
+  const start = useRef<{ px: number; x: number } | null>(null)
+  const confirm = useRef(onConfirm)
+  confirm.current = onConfirm
+
+  const down = (e: React.PointerEvent) => {
+    if (done) return
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    setMax((box.current?.offsetWidth || 300) - KNOB - PAD * 2)
+    start.current = { px: e.clientX, x }
+    setDragging(true)
+  }
+  const move = (e: React.PointerEvent) => {
+    if (!start.current) return
+    setX(Math.max(0, Math.min(max, start.current.x + e.clientX - start.current.px)))
+  }
+  const up = () => {
+    if (!start.current) return
+    start.current = null
+    setDragging(false)
+    if (x >= max * 0.85) { setX(max); setDone(true); confirm.current() }
+    else setX(0)
+  }
+
+  return (
+    <div ref={box} className={`slider ${over ? 'over' : ''} ${done ? 'done' : ''}`} style={{ width: width ?? '100%' }}>
+      <div className="slider-fill" style={{ width: x + KNOB + PAD, transition: dragging ? 'none' : 'width .2s' }} />
+      <div className="slider-text" style={{ opacity: 1 - (x / max) * 0.9 }}>
+        <span className="slider-label">{label}</span>
+        {detail && <span className="slider-detail mono">{detail}</span>}
+      </div>
+      <div className="slider-knob" style={{ transform: `translateX(${x}px)`, transition: dragging ? 'none' : 'transform .2s' }}
+        onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+        <Icon name="arrow-right" size={20} />
+      </div>
+    </div>
   )
 }

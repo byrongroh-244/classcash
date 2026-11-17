@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { passStatus } from '../lib/dates'
-import { Icon } from '../components/ui'
+import { Icon, SlideToConfirm } from '../components/ui'
 import { Celebrations, CheerFeed } from '../components/Celebrate'
 
 export default function Board({ onTeacher, onOpenStore, onShowStore, onCheckIn }: {
@@ -64,10 +64,10 @@ export default function Board({ onTeacher, onOpenStore, onShowStore, onCheckIn }
             const n = (data.lists[i.id] || []).length
             return (
               <div key={i.id} className="board-panel" style={{ gap: '1.2vh' }}>
-                <div className="row" style={{ fontSize: '3.2vh', fontWeight: 600 }}>
-                  <Icon name={i.icon} size={34} light /><span className="grow">{i.label}</span>
-                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>{n} of {data.students.length} in</span>
+                <div className="row" style={{ fontSize: 'min(3.2vh, 2.6vw)', fontWeight: 600, alignItems: 'flex-start' }}>
+                  <Icon name={i.icon} size={34} light /><span className="grow" style={{ minWidth: 0 }}>{i.label}</span>
                 </div>
+                <div style={{ color: '#94a3b8', fontSize: 'min(2.6vh, 2.2vw)' }}>{n} of {data.students.length} in</div>
                 <div className="bar" style={{ height: '2.2vh', borderRadius: '1.1vh' }}><div style={{ width: `${Math.min(100, (n / total) * 100)}%` }} /></div>
               </div>
             )
@@ -81,11 +81,9 @@ export default function Board({ onTeacher, onOpenStore, onShowStore, onCheckIn }
             {onCheckIn && data.hall.map(h => {
               const st = passStatus(h, data.now)
               return (
-                <button key={h.studentId} className={`checkin-btn ${st.over ? 'over' : ''}`} onClick={() => onCheckIn(h.studentId)}>
-                  <Icon name="person-simple-walk" size={22} light />
-                  <span><b>{h.name}</b> · tap when you're back</span>
-                  <span className="mono">{st.text}</span>
-                </button>
+                <SlideToConfirm key={h.studentId} width={300} over={st.over}
+                  label={<><b>{h.name}</b> · slide when back</>} detail={st.text}
+                  onConfirm={() => onCheckIn(h.studentId)} />
               )
             })}
           </div>
