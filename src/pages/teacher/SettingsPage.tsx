@@ -22,7 +22,22 @@ export default function SettingsPage() {
           <Field s={s} k="currency" label="Currency name" help="Shown in a few places, e.g. “credits” or “Groh Bucks”." />
           <Field s={s} k="logoutSeconds" label="Student auto sign-out (seconds)" num />
           <Field s={s} k="teacherTimeoutMin" label="Teacher mode auto-lock (minutes)" num />
-          <Field s={s} k="maxInHall" label="Max students in the hall at once" num help="Applies to store items with a hall timer. Your free passes ignore it." />
+        </div>
+
+        <h2>Hall passes</h2>
+        <div className="card" style={{ padding: 18, marginBottom: 24 }}>
+          <p className="slate" style={{ fontSize: 14, marginBottom: 12 }}>
+            A pass stays open until the student signs back in on the class iPad (or you tap Back on the Dashboard).
+            Their time out is logged, and nobody else can buy a pass while the hall is full.
+          </p>
+          <Field s={s} k="maxInHall" label="Max students in the hall at once" num help="Applies to purchased passes. Your free passes ignore it." />
+          <Toggle on={s.hallFineOn} label="Fine students who are gone too long" onChange={v => saveSettings({ hallFineOn: v })} />
+          {s.hallFineOn && (
+            <div className="row" style={{ gap: 16, marginTop: 8, alignItems: 'flex-start' }}>
+              <Field s={s} k="hallFineAfterMin" label="Gone longer than (minutes)" num help="Counted from when the pass started." />
+              <Field s={s} k="hallFineAmount" label="Fine (credits)" num />
+            </div>
+          )}
         </div>
 
         <h2>Shout-outs</h2>

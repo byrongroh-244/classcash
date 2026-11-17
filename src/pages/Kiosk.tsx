@@ -5,9 +5,9 @@
  */
 import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
-import { updateStudent, saveSettings } from '../lib/actions'
-import { mmss } from '../lib/dates'
-import { DemoBanner, PinPad, Icon } from '../components/ui'
+import { updateStudent, saveSettings, checkIn } from '../lib/actions'
+import { passStatus } from '../lib/dates'
+import { DemoBanner, PinPad, Icon, Toast } from '../components/ui'
 import StudentAccount from './StudentAccount'
 import { Celebrations, cheersToday } from '../components/Celebrate'
 import Board from './Board'
@@ -22,6 +22,7 @@ export default function Kiosk() {
   const [stage, setStage] = useState<'code' | 'new1' | 'new2' | null>(null)
   const [newCode, setNewCode] = useState('')
   const [loggedIn, setLoggedIn] = useState<string | null>(null)
+  const [welcome, setWelcome] = useState<{ name: string; minutes: number; fined: number } | null>(null)
   const storeOpen = data.settings.storeOpen
 
   // Store closed from the other iPad → sign out whoever is on this one.
@@ -50,16 +51,68 @@ export default function Kiosk() {
     />
   )
 
+  const tap = (s: Student) => { setPicked(s); setStage(s.passcode ? 'code' : 'new1') }
+  const close = () => { setPicked(null); setStage(null); setNewCode('') }
+
+  // Signed in with their passcode. Back from the hall? That's a check-in.
+  // Otherwise open their account (only while the store is open).
+  const afterAuth = async (id: string) => {
+    if (data.hall.some(h => h.studentId === id)) {
+      const name = data.students.find(s => s.id === id)?.name || ''
+      const res = await checkIn(data, id)
+      if (res) setWelcome({ name, ...res })
+      return
+    }
+    if (storeOpen) setLoggedIn(id)
+  }
+
+  const studentPins = <>
+        {picked && stage === 'code' && (
+          <PinPad
+            title={`Hi, ${picked.name}!`}
+            subtitle="Enter your passcode"
+            onCancel={close}
+            onComplete={code => {
+              const cur = data.students.find(s => s.id === picked.id)
+              if (code !== cur?.passcode) return false
+              afterAuth(picked.id); close(); return true
+            }}
+          />
+        )}
+        {picked && stage === 'new1' && (
+          <PinPad
+            title={`Welcome, ${picked.name}!`}
+            subtitle={<>Create a 4-digit passcode.<br />Don't share it with anyone.</>}
+            onCancel={close}
+            onComplete={code => { setNewCode(code); setStage('new2'); return true }}
+          />
+        )}
+        {picked && stage === 'new2' && (
+          <PinPad
+            key="confirm"
+            title="Type it again"
+            subtitle="To make sure you remember it"
+            onCancel={close}
+            onComplete={async code => {
+              if (code !== newCode) { setStage('new1'); setNewCode(''); return false }
+              await updateStudent(picked.id, { passcode: code })
+              afterAuth(picked.id); close(); return true
+            }}
+          />
+        )}
+  </>
+
+  const welcomeScreen = welcome && <WelcomeBack {...welcome} onDone={() => setWelcome(null)} />
+
   if (!storeOpen) return <>
-    <Board onTeacher={() => setPinFor('teacher')} onOpenStore={() => setPinFor('open')} />
+    <Board onTeacher={() => setPinFor('teacher')} onOpenStore={() => setPinFor('open')} onCheckIn={tap} />
     {teacherPin}
+    {studentPins}
+    {welcomeScreen}
   </>
 
   const me = loggedIn ? data.students.find(s => s.id === loggedIn) : null
   if (me) return <StudentAccount student={me} onDone={() => setLoggedIn(null)} />
-
-  const tap = (s: Student) => { setPicked(s); setStage(s.passcode ? 'code' : 'new1') }
-  const close = () => { setPicked(null); setStage(null); setNewCode('') }
 
   return (
     <div className="screen">
@@ -100,39 +153,8 @@ export default function Kiosk() {
 
       {teacherPin}
 
-      {picked && stage === 'code' && (
-        <PinPad
-          title={`Hi, ${picked.name}!`}
-          subtitle="Enter your passcode"
-          onCancel={close}
-          onComplete={code => {
-            const cur = data.students.find(s => s.id === picked.id)
-            if (code !== cur?.passcode) return false
-            setLoggedIn(picked.id); close(); return true
-          }}
-        />
-      )}
-      {picked && stage === 'new1' && (
-        <PinPad
-          title={`Welcome, ${picked.name}!`}
-          subtitle={<>Create a 4-digit passcode.<br />Don't share it with anyone.</>}
-          onCancel={close}
-          onComplete={code => { setNewCode(code); setStage('new2'); return true }}
-        />
-      )}
-      {picked && stage === 'new2' && (
-        <PinPad
-          key="confirm"
-          title="Type it again"
-          subtitle="To make sure you remember it"
-          onCancel={close}
-          onComplete={async code => {
-            if (code !== newCode) { setStage('new1'); setNewCode(''); return false }
-            await updateStudent(picked.id, { passcode: code })
-            setLoggedIn(picked.id); close(); return true
-          }}
-        />
-      )}
+      {studentPins}
+      {welcomeScreen}
     </div>
   )
 }
@@ -146,11 +168,11 @@ export function SidePanel() {
     <aside className="side">
       {data.hall.length > 0 && (
         <div>
-          <div className="label" style={{ marginBottom: 8 }}>In the hall</div>
+          <div className="label" style={{ marginBottom: 8 }}>In the hall · sign in when you're back</div>
           {data.hall.map(h => (
-            <div key={h.studentId} className="hall-chip">
+            <div key={h.studentId} className={`hall-chip ${passStatus(h, data.now).over ? 'over' : ''}`}>
               <Icon name="person-simple-walk" size={18} light /><span className="grow">{h.name}</span>
-              <span className="mono">{mmss(h.start + h.minutes * 60000 - data.now)}</span>
+              <span className="mono">{passStatus(h, data.now).text}</span>
             </div>
           ))}
         </div>
@@ -181,5 +203,18 @@ export function SidePanel() {
         ))}
       </div>
     </aside>
+  )
+}
+
+/** Shown after a student signs back in from the hall. */
+function WelcomeBack({ name, minutes, fined, onDone }: { name: string; minutes: number; fined: number; onDone: () => void }) {
+  return (
+    <div className={`screen done-screen ${fined ? 'late' : ''}`} style={{ position: 'fixed', inset: 0, zIndex: 120 }} onClick={onDone}>
+      <Icon name="person-simple-walk" size={90} light />
+      <div className="serif" style={{ fontSize: 44, fontWeight: 700 }}>Welcome back, {name}</div>
+      <div style={{ fontSize: 26, fontWeight: 600 }}>You were out {minutes} min</div>
+      {fined > 0 && <div style={{ fontSize: 22 }}>Late return: −{fined} credits</div>}
+      <Toast onDone={onDone} ms={5000}><span>Checked back in</span></Toast>
+    </div>
   )
 }

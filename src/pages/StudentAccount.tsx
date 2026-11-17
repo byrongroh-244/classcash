@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useData, usedCount, banked, bankedTotal, onList } from '../lib/data'
 import { db } from '../lib/db'
 import { buy, canBuy, bankToward, bankRoom } from '../lib/actions'
-import { timeStr, shortDate, mmss } from '../lib/dates'
+import { timeStr, shortDate, passStatus } from '../lib/dates'
 import { Amt, Overlay, useIdle, Icon } from '../components/ui'
 import type { Student, StoreItem, Tx } from '../lib/types'
 
@@ -70,7 +70,7 @@ export default function StudentAccount({ student: s, onDone }: { student: Studen
           <div className="section" style={{ paddingBottom: 0 }}>
             <div className="hall-card" style={{ margin: 0 }}>
               <Icon name="person-simple-walk" size={20} /> <b className="grow">{myPass.label}</b>
-              <span className="mono">{mmss(myPass.start + myPass.minutes * 60000 - data.now)} left</span>
+              <span className="mono">{passStatus(myPass, data.now).over ? `${passStatus(myPass, data.now).text} over` : `${passStatus(myPass, data.now).text} left`}</span>
             </div>
           </div>
         )}
@@ -182,6 +182,7 @@ function PurchaseDone({ item, at, name, balance, onKeepShopping, onLogOut }: {
       <div className="serif" style={{ fontSize: 44, fontWeight: 700 }}>{name}</div>
       <div style={{ fontSize: 28, fontWeight: 600 }}>{item.label}</div>
       {pass && <div className="mono" style={{ fontSize: 22, opacity: .9 }}>Back by {timeStr(pass.start + pass.minutes * 60000)}</div>}
+      {pass && <div style={{ fontSize: 18, opacity: .95 }}>Sign back in on this iPad when you return</div>}
       {item.tier === 'saver' && <div style={{ fontSize: 22, opacity: .95 }}>You're on the list!</div>}
       <div style={{ fontSize: 16, opacity: .85 }}>Purchased at {timeStr(at)} · {balance} {data.settings.currency} left</div>
       <div className="row" style={{ gap: 14, marginTop: 28 }}>

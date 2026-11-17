@@ -128,7 +128,7 @@ export function canBuy(data: Data, s: Student, item: StoreItem): BuyCheck {
   }
   if (item.hallMinutes) {
     if (data.hall.some(h => h.studentId === s.id)) return { ok: false, reason: "You're already on a hall pass.", short: 'On a pass' }
-    if (data.hall.length >= data.settings.maxInHall) return { ok: false, reason: 'Someone is already in the hall. Try again when they are back.', short: 'Hall is full' }
+    if (data.hall.length >= data.settings.maxInHall) return { ok: false, reason: 'Someone is already in the hall. Try again when they have checked back in.', short: 'Hall is full' }
   }
   if (item.tier === 'saver') {
     if (onList(data, s.id, item.id)) return { ok: false, reason: "You're already on the list for this.", short: 'On the list' }
@@ -234,6 +234,30 @@ export async function buy(data: Data, s: Student, item: StoreItem): Promise<bool
 
 // ─── Hall ────────────────────────────────────────────────────────────────────
 
+/**
+ * Student is back from the hall (they signed in, or you tapped Back).
+ * Logs how long they were out, and fines them if Settings says to.
+ */
+export async function checkIn(data: Data, studentId: string): Promise<{ minutes: number; fined: number } | null> {
+  const h = data.hall.find(x => x.studentId === studentId)
+  if (!h) return null
+  const outMs = Date.now() - h.start
+  const minutes = Math.max(1, Math.round(outMs / 60000))
+  const s = data.allStudents.find(x => x.id === studentId)
+  const name = s?.name || h.name
+  const u: Record<string, unknown> = { [`hall/${studentId}`]: null }
+  txUpdates(u, { studentId, studentName: name, amount: 0, earnDelta: 0, kind: 'return', label: `Back from ${h.label} (${minutes} min)`, by: 'student' })
+  const { hallFineOn, hallFineAfterMin, hallFineAmount } = data.settings
+  let fined = 0
+  if (hallFineOn && hallFineAmount > 0 && outMs > hallFineAfterMin * 60000) {
+    fined = hallFineAmount
+    txUpdates(u, { studentId, studentName: name, amount: -fined, earnDelta: -fined, kind: 'fine', label: `Late back from hall (${minutes} min)`, by: 'teacher' }, Date.now() + 1)
+  }
+  await db.update(u)
+  return { minutes, fined }
+}
+
+/** @deprecated use checkIn */
 export async function endHallPass(studentId: string) {
   await db.update({ [`hall/${studentId}`]: null })
 }

@@ -4,8 +4,8 @@
  */
 import { useState } from 'react'
 import { useData } from '../../lib/data'
-import { award, awardRule, undoBatch, undoTx, lastUndoableBatch, endHallPass, freeHallPass } from '../../lib/actions'
-import { timeStr, mmss } from '../../lib/dates'
+import { award, awardRule, undoBatch, undoTx, lastUndoableBatch, checkIn, freeHallPass } from '../../lib/actions'
+import { timeStr, passStatus } from '../../lib/dates'
 import { Amt, Overlay, Toast, Icon } from '../../components/ui'
 import type { EarnRule, Student, Tx } from '../../lib/types'
 
@@ -82,12 +82,16 @@ export default function Dashboard() {
         </div>
         {data.hall.length === 0 && <p className="muted" style={{ padding: '0 16px', fontSize: 13 }}>Nobody</p>}
         {data.hall.map(h => {
-          const left = h.start + h.minutes * 60000 - data.now
+          const st = passStatus(h, data.now)
+          const late = data.settings.hallFineOn && st.out > data.settings.hallFineAfterMin * 60000
           return (
-            <div key={h.studentId} className={`hall-card ${left < 30000 ? 'over' : ''}`}>
-              <div className="grow"><b>{h.name}</b><div style={{ fontSize: 12, opacity: .8 }}>{h.label}</div></div>
-              <span className="mono">{mmss(left)}</span>
-              <button className="btn sm" onClick={() => endHallPass(h.studentId)}>Back</button>
+            <div key={h.studentId} className={`hall-card ${st.over ? 'over' : ''}`}>
+              <div className="grow">
+                <b>{h.name}</b>
+                <div style={{ fontSize: 12, opacity: .85 }}>{h.label} · out since {timeStr(h.start)}{late ? ' · late' : ''}</div>
+              </div>
+              <span className="mono">{st.text}</span>
+              <button className="btn sm" title="Check them back in (logs the time, and the late fine if it applies)" onClick={() => checkIn(data, h.studentId)}>Back</button>
             </div>
           )
         })}

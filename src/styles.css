@@ -373,3 +373,12 @@ tr.dragging td { background: var(--white); }
 .demo-banner + .topbar, .demo-banner + .acct-head { padding-top: 12px; }
 .board { padding-top: calc(3vh + var(--status-bar)); }
 .done-screen { padding-top: var(--status-bar); }
+
+/* ── Hall check-in ── */
+.hall-chip.over { background: var(--red); color: #fff; }
+.checkin-bar {
+  display: flex; align-items: center; gap: 1vw; flex-wrap: wrap; background: #1e293b; border: 1px solid #334155;
+  border-radius: 1.6vh; padding: 1.4vh 1.4vw; font-size: 2.4vh; color: #e2e8f0;
+}
+.checkin-btn { background: var(--green); border-color: var(--green); color: #fff; font-size: 2.4vh; }
+.done-screen.late { background: var(--red); }

@@ -15,6 +15,11 @@ export interface Settings {
   cheerKiosk: boolean
   /** Closed = the front iPad shows the leaderboard and nothing can be bought. */
   storeOpen: boolean
+  /** Automatic fine when a student checks back in from a hall pass after too long. */
+  hallFineOn: boolean
+  /** Minutes out (counted from when the pass started) before the fine applies. */
+  hallFineAfterMin: number
+  hallFineAmount: number
   /** What the leaderboard screen shows (projector /board and the class iPad while the store is closed). */
   boardShoutouts: boolean
   boardWeek: boolean
@@ -92,6 +97,7 @@ export type TxKind =
   | 'daily' | 'earn' | 'bonus' | 'fine'   // teacher gives / takes
   | 'spend' | 'donate' | 'bank'           // student
   | 'free'                                // free hall pass (0 credits)
+  | 'return'                              // back from a hall pass (0 credits, logs the time)
   | 'reverse' | 'reset'
 
 export interface Tx {

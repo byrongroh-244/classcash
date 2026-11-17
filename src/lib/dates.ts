@@ -26,3 +26,10 @@ export function mmss(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000))
   return `${Math.floor(s / 60)}:${pad(s % 60)}`
 }
+
+/** A hall pass's state: time left, or how far over. */
+export function passStatus(h: { start: number; minutes: number }, now: number) {
+  const left = h.start + h.minutes * 60000 - now
+  const out = now - h.start
+  return { left, over: left < 0, out, text: left >= 0 ? mmss(left) : `+${mmss(-left)}` }
+}

@@ -6,11 +6,12 @@
  */
 import { useEffect, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
-import { mmss } from '../lib/dates'
+import { passStatus } from '../lib/dates'
+import type { Student } from '../lib/types'
 import { Icon } from '../components/ui'
 import { Celebrations, CheerFeed } from '../components/Celebrate'
 
-export default function Board({ onTeacher, onOpenStore }: { onTeacher?: () => void; onOpenStore?: () => void } = {}) {
+export default function Board({ onTeacher, onOpenStore, onCheckIn }: { onTeacher?: () => void; onOpenStore?: () => void; onCheckIn?: (s: Student) => void } = {}) {
   const data = useData()
   const [clock, setClock] = useState('')
   useEffect(() => setClock(new Date(data.now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })), [data.now])
@@ -45,9 +46,10 @@ export default function Board({ onTeacher, onOpenStore }: { onTeacher?: () => vo
     <div className="board">
       <div className="row">
         <h1 className="grow">{data.settings.className}</h1>
-        {data.hall.map(h => (
-          <span key={h.studentId} className="hall-chip" style={{ fontSize: '2.4vh' }}><Icon name="person-simple-walk" size={22} light /> {h.name} <span className="mono">{mmss(h.start + h.minutes * 60000 - data.now)}</span></span>
-        ))}
+        {data.hall.map(h => {
+          const st = passStatus(h, data.now)
+          return <span key={h.studentId} className={`hall-chip ${st.over ? 'over' : ''}`} style={{ fontSize: '2.4vh' }}><Icon name="person-simple-walk" size={22} light /> {h.name} <span className="mono">{st.text}</span></span>
+        })}
         <span className="mono" style={{ fontSize: '4vh', color: '#94a3b8', marginLeft: '2vw' }}>{clock}</span>
       </div>
       <div className="board-cols" style={{ gridTemplateColumns: `repeat(${Math.max(1, cols)}, 1fr)` }}>
@@ -68,6 +70,15 @@ export default function Board({ onTeacher, onOpenStore }: { onTeacher?: () => vo
                 <div className="bar" style={{ height: '2.2vh', borderRadius: '1.1vh' }}><div style={{ width: `${Math.min(100, (n / total) * 100)}%` }} /></div>
               </div>
             )
+          })}
+        </div>
+      )}
+      {onCheckIn && data.hall.length > 0 && (
+        <div className="checkin-bar">
+          <span>Back from the hall? Tap your name to sign back in:</span>
+          {data.hall.map(h => {
+            const st = data.students.find(x => x.id === h.studentId)
+            return st ? <button key={h.studentId} className="btn lg checkin-btn" onClick={() => onCheckIn(st)}>{h.name}</button> : null
           })}
         </div>
       )}

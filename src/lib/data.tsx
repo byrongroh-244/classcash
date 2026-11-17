@@ -19,7 +19,7 @@ export interface Data {
   banks: Record<string, Record<string, number>>
   /** lists[itemId] = students who bought it and are on its list */
   lists: Record<string, ListEntry[]>
-  hall: HallPass[]             // passes still running
+  hall: HallPass[]             // students out on a pass today (until they check back in)
   weekTx: Tx[]                 // since Monday, newest first
   todayTx: Tx[]                // newest first
   /** daily[studentId][ruleId] = txId for today's paid daily credits */
@@ -133,7 +133,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // the same object identity until the database actually changes.
   const value = useMemo<Data>(() => {
     const { allHall, ...rest } = base
-    return { ...rest, hall: allHall.filter(h => h.start + h.minutes * 60000 > now), now }
+    // A pass stays open until the student checks back in (or you tap Back).
+    // Passes left open from an earlier day are ignored.
+    return { ...rest, hall: allHall.filter(h => dateStr(new Date(h.start)) === rest.today), now }
   }, [base, now])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
