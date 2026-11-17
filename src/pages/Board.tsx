@@ -11,7 +11,9 @@ import type { Student } from '../lib/types'
 import { Icon } from '../components/ui'
 import { Celebrations, CheerFeed } from '../components/Celebrate'
 
-export default function Board({ onTeacher, onOpenStore, onCheckIn }: { onTeacher?: () => void; onOpenStore?: () => void; onCheckIn?: (s: Student) => void } = {}) {
+export default function Board({ onTeacher, onOpenStore, onShowStore, onCheckIn }: {
+  onTeacher?: () => void; onOpenStore?: () => void; onShowStore?: () => void; onCheckIn?: (s: Student) => void
+} = {}) {
   const data = useData()
   const [clock, setClock] = useState('')
   useEffect(() => setClock(new Date(data.now).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })), [data.now])
@@ -86,6 +88,9 @@ export default function Board({ onTeacher, onOpenStore, onCheckIn }: { onTeacher
         <div className="row" style={{ marginTop: '-1vh' }}>
           <button className="btn sm ghost" style={{ color: '#64748b' }} onClick={onTeacher}><Icon name="lock-simple" size={16} light style={{ opacity: .5 }} /> Teacher</button>
           <span className="grow" />
+          {onShowStore && (
+            <button className="btn open-store-btn" onClick={onShowStore}><Icon name="storefront" size={18} light /> Store</button>
+          )}
           {onOpenStore && (
             <button className="btn open-store-btn" onClick={onOpenStore}><Icon name="storefront" size={18} light /> Open store</button>
           )}

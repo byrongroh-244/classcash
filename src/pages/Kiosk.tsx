@@ -3,7 +3,7 @@
  * The small "Teacher" button (PIN) switches to teacher mode on this same page,
  * so there's no other URL to swipe back to.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useData, leaderboard } from '../lib/data'
 import { updateStudent, saveSettings, checkIn } from '../lib/actions'
 import { passStatus } from '../lib/dates'
@@ -24,11 +24,24 @@ export default function Kiosk() {
   const [loggedIn, setLoggedIn] = useState<string | null>(null)
   const [welcome, setWelcome] = useState<{ name: string; minutes: number; fined: number } | null>(null)
   const storeOpen = data.settings.storeOpen
+  // This iPad's own choice while the store is open: the name screen, or the leaderboard.
+  // Remembered on this device only; the other iPad isn't affected.
+  const [view, setViewState] = useState<'store' | 'board'>(() => {
+    try { return localStorage.getItem('classbank_view') === 'board' ? 'board' : 'store' } catch { return 'store' }
+  })
+  const setView = (v: 'store' | 'board') => {
+    setViewState(v)
+    try { localStorage.setItem('classbank_view', v) } catch { /* ignore */ }
+  }
 
   // Store closed from the other iPad → sign out whoever is on this one.
+  // Store opened (from either iPad) → every iPad goes back to the name screen.
+  const wasOpen = useRef(storeOpen)
   useEffect(() => {
     if (!storeOpen) { setLoggedIn(null); setPicked(null); setStage(null); setNewCode('') }
-  }, [storeOpen])
+    if (storeOpen && !wasOpen.current) setView('store')
+    wasOpen.current = storeOpen
+  }, [storeOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!data.ready) return <div className="screen" style={{ alignItems: 'center', justifyContent: 'center' }}><p className="muted">Loading…</p></div>
 
@@ -104,8 +117,10 @@ export default function Kiosk() {
 
   const welcomeScreen = welcome && <WelcomeBack {...welcome} onDone={() => setWelcome(null)} />
 
-  if (!storeOpen) return <>
-    <Board onTeacher={() => setPinFor('teacher')} onOpenStore={() => setPinFor('open')} onCheckIn={tap} />
+  if (!storeOpen || view === 'board') return <>
+    <Board onTeacher={() => setPinFor('teacher')} onCheckIn={tap}
+      onOpenStore={storeOpen ? undefined : () => setPinFor('open')}
+      onShowStore={storeOpen ? () => setView('store') : undefined} />
     {teacherPin}
     {studentPins}
     {welcomeScreen}
@@ -143,6 +158,7 @@ export default function Kiosk() {
             <div className="row">
               <button className="btn sm ghost" onClick={() => setPinFor('teacher')}><Icon name="lock-simple" size={16} /> Teacher</button>
               <button className="btn sm" onClick={() => setPinFor('close')}><Icon name="storefront" size={16} /> Close store</button>
+              <button className="btn sm" onClick={() => setView('board')}><Icon name="trophy" size={16} /> Leaderboard</button>
             </div>
             <span className="muted" style={{ fontSize: 12 }}>{data.students.length} students</span>
           </div>
